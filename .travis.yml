@@ -29,4 +29,4 @@ script:
   - make $TARGET check
 
 after_success:
-  - goveralls -coverprofile=$TARGET.cover
+  - goveralls -coverprofile=$TARGET.cover -debug

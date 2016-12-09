@@ -31,4 +31,4 @@ test_script:
   - mingw32-make %TARGET%
 
 on_success:
-  - if defined COVERALLS_TOKEN goveralls -coverprofile=%TARGET%.cover -service=
+  - if defined COVERALLS_TOKEN goveralls -service=appveyor -coverprofile=%TARGET%.cover -debug
