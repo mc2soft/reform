@@ -204,6 +204,33 @@ func (s *ReformSuite) TestPlaceholders() {
 	s.Equal([]string{"$2", "$3", "$4", "$5", "$6"}, s.q.Placeholders(2, 5))
 }
 
+func (s *ReformSuite) TestBeginCommitRollback() {
+	setIdentityInsert(s.T(), s.q, "people", true)
+
+	err := s.q.Rollback()
+	s.Require().NoError(err)
+	s.q = nil
+
+	person := &Person{ID: 42, Email: pointer.ToString(faker.Internet().Email())}
+
+	tx, err := DB.Begin()
+	s.Require().NoError(err)
+	s.NoError(tx.Insert(person))
+	s.NoError(tx.Rollback())
+	s.Equal(tx.Commit(), reform.ErrTxDone)
+	s.Equal(tx.Rollback(), reform.ErrTxDone)
+	s.Equal(DB.Reload(person), reform.ErrNoRows)
+
+	tx, err = DB.Begin()
+	s.Require().NoError(err)
+	s.NoError(tx.Insert(person))
+	s.NoError(tx.Commit())
+	s.Equal(tx.Commit(), reform.ErrTxDone)
+	s.Equal(tx.Rollback(), reform.ErrTxDone)
+	s.NoError(DB.Reload(person))
+	s.NoError(DB.Delete(person))
+}
+
 func (s *ReformSuite) TestInTransaction() {
 	setIdentityInsert(s.T(), s.q, "people", true)
 
