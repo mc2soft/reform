@@ -54,8 +54,8 @@ func (q *Querier) QualifiedColumns(view View) []string {
 // Exec executes a query without returning any rows.
 // The args are for any placeholder parameters in the query.
 func (q *Querier) Exec(query string, args ...interface{}) (sql.Result, error) {
-	start := time.Now()
 	q.logBefore(query, args)
+	start := time.Now()
 	res, err := q.dbtx.Exec(query, args...)
 	q.logAfter(query, args, time.Now().Sub(start), err)
 	return res, err
@@ -64,8 +64,8 @@ func (q *Querier) Exec(query string, args ...interface{}) (sql.Result, error) {
 // Query executes a query that returns rows, typically a SELECT.
 // The args are for any placeholder parameters in the query.
 func (q *Querier) Query(query string, args ...interface{}) (*sql.Rows, error) {
-	start := time.Now()
 	q.logBefore(query, args)
+	start := time.Now()
 	rows, err := q.dbtx.Query(query, args...)
 	q.logAfter(query, args, time.Now().Sub(start), err)
 	return rows, err
@@ -74,8 +74,8 @@ func (q *Querier) Query(query string, args ...interface{}) (*sql.Rows, error) {
 // QueryRow executes a query that is expected to return at most one row.
 // QueryRow always returns a non-nil value. Errors are deferred until Row's Scan method is called.
 func (q *Querier) QueryRow(query string, args ...interface{}) *sql.Row {
-	start := time.Now()
 	q.logBefore(query, args)
+	start := time.Now()
 	row := q.dbtx.QueryRow(query, args...)
 	q.logAfter(query, args, time.Now().Sub(start), nil)
 	return row

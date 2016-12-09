@@ -37,8 +37,8 @@ func NewDBFromInterface(db DBInterface, dialect Dialect, logger Logger) *DB {
 
 // Begin starts a transaction.
 func (db *DB) Begin() (*TX, error) {
-	start := time.Now()
 	db.logBefore("BEGIN", nil)
+	start := time.Now()
 	tx, err := db.db.Begin()
 	db.logAfter("BEGIN", nil, time.Now().Sub(start), err)
 	if err != nil {
