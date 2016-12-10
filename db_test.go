@@ -6,8 +6,8 @@ import (
 	"github.com/AlekSi/pointer"
 	"github.com/enodata/faker"
 
-	"github.com/lib/pq"
 	"gopkg.in/reform.v1"
+	"gopkg.in/reform.v1/dialects/mssql"
 	"gopkg.in/reform.v1/dialects/mysql"
 	"gopkg.in/reform.v1/dialects/postgresql"
 	"gopkg.in/reform.v1/dialects/sqlite3"
@@ -86,17 +86,15 @@ func (s *ReformSuite) TestErrorInTransaction() {
 	s.NoError(tx.Rollback())
 	s.Equal(tx.Commit(), reform.ErrTxDone)
 	s.Equal(tx.Rollback(), reform.ErrTxDone)
-	s.Equal(DB.Reload(person1), reform.ErrNoRows)
-	s.Equal(DB.Reload(person2), reform.ErrNoRows)
+	s.EqualError(DB.Reload(person1), reform.ErrNoRows.Error())
+	s.EqualError(DB.Reload(person2), reform.ErrNoRows.Error())
 }
 
 // This behavior is checked for documentation purposes only. reform does not rely on it.
 func (s *ReformSuite) TestAbortedTransaction() {
-	if s.q.Dialect == mysql.Dialect || s.q.Dialect == sqlite3.Dialect {
+	if s.q.Dialect == mysql.Dialect || s.q.Dialect == sqlite3.Dialect || s.q.Dialect == mssql.Dialect {
 		s.T().Skip(s.q.Dialect.String() + " works differently, see TestErrorInTransaction")
 	}
-
-	setIdentityInsert(s.T(), s.q, "people", true)
 
 	s.Require().NoError(s.q.Rollback())
 	s.q = nil
@@ -108,10 +106,10 @@ func (s *ReformSuite) TestAbortedTransaction() {
 	s.Require().NoError(err)
 	s.NoError(tx.Insert(person))
 	s.EqualError(tx.Insert(person), `pq: duplicate key value violates unique constraint "people_pkey"`)
-	s.Equal(tx.Commit(), pq.ErrInFailedTransaction)
+	s.EqualError(tx.Commit(), `pq: Could not complete operation in a failed transaction`)
 	s.Equal(tx.Commit(), reform.ErrTxDone)
 	s.Equal(tx.Rollback(), reform.ErrTxDone)
-	s.Equal(DB.Reload(person), reform.ErrNoRows)
+	s.EqualError(DB.Reload(person), reform.ErrNoRows.Error())
 
 	// rollback works
 	tx, err = DB.Begin()
@@ -121,7 +119,7 @@ func (s *ReformSuite) TestAbortedTransaction() {
 	s.NoError(tx.Rollback())
 	s.Equal(tx.Commit(), reform.ErrTxDone)
 	s.Equal(tx.Rollback(), reform.ErrTxDone)
-	s.Equal(DB.Reload(person), reform.ErrNoRows)
+	s.EqualError(DB.Reload(person), reform.ErrNoRows.Error())
 }
 
 func (s *ReformSuite) TestInTransaction() {
