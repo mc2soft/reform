@@ -9,8 +9,11 @@ var (
 	// ErrNoRows is returned from various methods when query produced no rows.
 	ErrNoRows = sql.ErrNoRows
 
-	// ErrTxDone is returned from Commit() and Rollback() TX methods when transaction is already committed or rolled back.
+	// ErrTxDone is returned from Commit() and Rollback() TX methods when transaction is already
+	// committed or rolled back.
 	ErrTxDone = sql.ErrTxDone
+
+	ErrNoSavepoint = errors.New("reform: no savepoint")
 
 	// ErrNoPK is returned from various methods when primary key is required and not set.
 	ErrNoPK = errors.New("reform: no primary key")

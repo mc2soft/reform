@@ -130,30 +130,39 @@ func (s *ReformSuite) TestInTransaction() {
 
 	person := &Person{ID: 42, Email: pointer.ToString(faker.Internet().Email())}
 
+	// error in closure
 	err := DB.InTransaction(func(tx *reform.TX) error {
-		err := tx.Insert(person)
-		s.NoError(err)
+		s.NoError(tx.Insert(person))
 		return errors.New("epic error")
 	})
 	s.EqualError(err, "epic error")
 	s.Equal(DB.Reload(person), reform.ErrNoRows)
 
+	// panic in closure
 	s.Panics(func() {
 		err = DB.InTransaction(func(tx *reform.TX) error {
-			err := tx.Insert(person)
-			s.NoError(err)
+			s.NoError(tx.Insert(person))
 			panic("epic panic!")
 		})
 	})
 	s.Equal(DB.Reload(person), reform.ErrNoRows)
 
+	// duplicate PK in closure
 	err = DB.InTransaction(func(tx *reform.TX) error {
+		s.NoError(tx.Insert(person))
 		err := tx.Insert(person)
-		s.NoError(err)
+		s.Error(err)
+		return err
+	})
+	s.Error(err)
+	s.Equal(DB.Reload(person), reform.ErrNoRows)
+
+	// no error
+	err = DB.InTransaction(func(tx *reform.TX) error {
+		s.NoError(tx.Insert(person))
 		return nil
 	})
 	s.NoError(err)
 	s.NoError(DB.Reload(person))
-
 	s.NoError(DB.Delete(person))
 }
