@@ -63,6 +63,13 @@ func main() {
 					"root@/reform-database?parseTime=true&strict=true&sql_mode='ANSI,NO_AUTO_CREATE_USER'&sql_notes=false&time_zone='UTC'&multiStatements=true",
 					"reform-user:reform-password123@/reform-database?parseTime=true&strict=true&sql_mode='ANSI,NO_AUTO_CREATE_USER'&sql_notes=false&time_zone='America%2FNew_York'",
 				},
+
+				// interpolateParams=true
+				{
+					"mysql",
+					"root@/reform-database?parseTime=true&strict=true&sql_mode='ANSI,NO_AUTO_CREATE_USER'&sql_notes=false&interpolateParams=true&time_zone='UTC'&multiStatements=true",
+					"reform-user:reform-password123@/reform-database?parseTime=true&strict=true&sql_mode='ANSI,NO_AUTO_CREATE_USER'&sql_notes=false&interpolateParams=true&time_zone='America%2FNew_York'",
+				},
 			},
 		},
 

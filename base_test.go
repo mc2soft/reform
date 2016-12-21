@@ -43,18 +43,24 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	// Use single connection so various session-related variables work.
+	// For example: "PRAGMA foreign_keys" for SQLite3, "SET IDENTITY_INSERT" for MS SQL, etc.
 	db.SetMaxIdleConns(1)
 	db.SetMaxOpenConns(1)
 	db.SetConnMaxLifetime(-1)
+
 	err = db.Ping()
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	// print useful information for debugging
 	now := time.Now()
-	log.Printf("time.Now()       = %s", now)
-	log.Printf("time.Now().UTC() = %s", now.UTC())
+	log.Printf("time.Now()              = %s", now)
+	log.Printf("time.Now().UTC()        = %s", now.UTC())
 
+	// select dialect for driver
 	var dialect reform.Dialect
 	switch driver {
 	case "mysql":
@@ -65,7 +71,7 @@ func TestMain(m *testing.M) {
 		if err != nil {
 			log.Fatal(err)
 		}
-		log.Printf("MySQL time_zone = %q", tz)
+		log.Printf("MySQL time_zone     = %q", tz)
 
 	case "postgres":
 		dialect = postgresql.Dialect
