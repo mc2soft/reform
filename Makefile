@@ -31,6 +31,7 @@ check: test
 	-errcheck ./...
 	golint ./...
 
+
 test-db:
 	cat internal/test/sql/$(DATABASE)_init.sql \
 		internal/test/sql/data.sql \
@@ -41,6 +42,26 @@ test-db:
 
 drone:
 	drone exec --repo.trusted .drone-local.yml
+
+test_lib_pq: export REFORM_TEST_DRIVER = postgres
+test_lib_pq: export REFORM_TEST_SOURCE = postgres://localhost:5432/reform-test?sslmode=disable&TimeZone=America/New_York
+test_lib_pq: export REFORM_TEST_SOURCE_SLAVE = postgres://localhost:5432/reform-test-slave?sslmode=disable&TimeZone=America/New_York
+test_lib_pq: export REFORM_TEST_SOURCE_MASTER = postgres://localhost:5432/reform-test-master?sslmode=disable&TimeZone=America/New_York
+test_lib_pq:
+	-dropdb reform-test
+	createdb reform-test
+	-dropdb reform-test-slave
+	createdb reform-test-slave
+	-dropdb reform-test-master
+	createdb reform-test-master
+	env PGTZ=UTC psql -v ON_ERROR_STOP=1 -q -d reform-test < internal/test/sql/postgresql_init.sql
+	env PGTZ=UTC psql -v ON_ERROR_STOP=1 -q -d reform-test < internal/test/sql/data.sql
+	env PGTZ=UTC psql -v ON_ERROR_STOP=1 -q -d reform-test < internal/test/sql/postgresql_data.sql
+	env PGTZ=UTC psql -v ON_ERROR_STOP=1 -q -d reform-test < internal/test/sql/postgresql_set.sql
+	env PGTZ=UTC psql -v ON_ERROR_STOP=1 -q -d reform-test-slave < internal/test/sql/postgresql_init.sql
+	env PGTZ=UTC psql -v ON_ERROR_STOP=1 -q -d reform-test-master < internal/test/sql/postgresql_init.sql
+	go test -coverprofile=test_lib_pq.cover
+
 
 postgres: export DATABASE = postgres
 postgres: export REFORM_DRIVER = postgres
