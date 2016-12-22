@@ -12,12 +12,13 @@ import (
 )
 
 func initMSDB() *reform.DB {
-	driver := os.Getenv("REFORM_TEST_DRIVER")
+	driver := os.Getenv("REFORM_DRIVER")
 	masterSource := os.Getenv("REFORM_TEST_SOURCE_MASTER")
 	slaveSource := os.Getenv("REFORM_TEST_SOURCE_SLAVE")
 	log.Printf("driver = %q, master_source = %q slave_source = %q", driver, masterSource, slaveSource)
 	if driver == "" || masterSource == "" || slaveSource == "" {
-		log.Fatal("no driver or source or slaveSource, set REFORM_TEST_DRIVER , REFORM_TEST_SOURCE_MASTER, REFORM_TEST_SOURCE_SLAVE")
+		log.Println("no driver or source or slaveSource, set REFORM_TEST_DRIVER , REFORM_TEST_SOURCE_MASTER, REFORM_TEST_SOURCE_SLAVE")
+		return nil
 	}
 
 	db, err := sql.Open(driver, masterSource)
@@ -47,6 +48,11 @@ func initMSDB() *reform.DB {
 
 func (s *ReformSuite) TestReadNotInTransactionOnSlave() {
 	MSDB := initMSDB()
+	if MSDB == nil {
+		s.T().SkipNow()
+		return
+	}
+
 	if _, err := MSDB.Querier.DeleteFrom(PersonTable, ""); err != nil {
 		log.Fatal(err)
 	}
@@ -72,6 +78,10 @@ func (s *ReformSuite) TestReadNotInTransactionOnSlave() {
 
 func (s *ReformSuite) TestWriteReadInTransactionOnMaster() {
 	MSDB := initMSDB()
+	if MSDB == nil {
+		s.T().SkipNow()
+		return
+	}
 	if _, err := MSDB.Querier.DeleteFrom(PersonTable, ""); err != nil {
 		log.Fatal(err)
 	}

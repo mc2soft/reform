@@ -15,14 +15,14 @@ type StructData struct {
 
 var (
 	prologTemplate = template.Must(template.New("prolog").Parse(`
-// Generated with gopkg.in/reform.v1. Do not edit by hand.
+// Generated with github.com/mc2soft/reform. Do not edit by hand.
 
 import (
 	"fmt"
 	"strings"
 
-	"gopkg.in/reform.v1"
-	"gopkg.in/reform.v1/parse"
+	"github.com/mc2soft/reform"
+	"github.com/mc2soft/reform/parse"
 )
 `))
 

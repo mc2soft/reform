@@ -1,5 +1,7 @@
 package models
 
+// Generated with github.com/mc2soft/reform. Do not edit by hand.
+
 import (
 	"fmt"
 	"strings"

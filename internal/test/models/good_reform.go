@@ -1,6 +1,6 @@
 package models
 
-// Generated with gopkg.in/reform.v1. Do not edit by hand.
+// Generated with github.com/mc2soft/reform. Do not edit by hand.
 
 import (
 	"fmt"

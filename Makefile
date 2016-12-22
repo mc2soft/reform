@@ -17,10 +17,10 @@ download_deps:
 
 test:
 	rm -f internal/test/models/*_reform.go
-	go install -v gopkg.in/reform.v1/...
-	go test -coverprofile=parse.cover gopkg.in/reform.v1/parse
-	go generate -v -x gopkg.in/reform.v1/internal/test/models
-	go install -v gopkg.in/reform.v1/internal/test/models
+	go install -v github.com/mc2soft/reform/...
+	go test -coverprofile=parse.cover github.com/mc2soft/reform/parse
+	go generate -v -x github.com/mc2soft/reform/internal/test/models
+	go install -v github.com/mc2soft/reform/internal/test/models
 	go test -i -v
 	go install -v github.com/kisielk/errcheck \
 					github.com/golang/lint/golint \
@@ -43,23 +43,23 @@ test-db:
 drone:
 	drone exec --repo.trusted .drone-local.yml
 
-test_lib_pq: export REFORM_TEST_DRIVER = postgres
-test_lib_pq: export REFORM_TEST_SOURCE = postgres://localhost:5432/reform-test?sslmode=disable&TimeZone=America/New_York
-test_lib_pq: export REFORM_TEST_SOURCE_SLAVE = postgres://localhost:5432/reform-test-slave?sslmode=disable&TimeZone=America/New_York
-test_lib_pq: export REFORM_TEST_SOURCE_MASTER = postgres://localhost:5432/reform-test-master?sslmode=disable&TimeZone=America/New_York
-test_lib_pq:
+slaves: export REFORM_DRIVER = postgres
+slaves: export REFORM_TEST_SOURCE = postgres://localhost:5432/reform-test?sslmode=disable&TimeZone=America/New_York
+slaves: export REFORM_TEST_SOURCE_SLAVE = postgres://localhost:5432/reform-test-slave?sslmode=disable&TimeZone=America/New_York
+slaves: export REFORM_TEST_SOURCE_MASTER = postgres://localhost:5432/reform-test-master?sslmode=disable&TimeZone=America/New_York
+slaves:
 	-dropdb reform-test
 	createdb reform-test
 	-dropdb reform-test-slave
 	createdb reform-test-slave
 	-dropdb reform-test-master
 	createdb reform-test-master
-	env PGTZ=UTC psql -v ON_ERROR_STOP=1 -q -d reform-test < internal/test/sql/postgresql_init.sql
+	env PGTZ=UTC psql -v ON_ERROR_STOP=1 -q -d reform-test < internal/test/sql/postgres_init.sql
 	env PGTZ=UTC psql -v ON_ERROR_STOP=1 -q -d reform-test < internal/test/sql/data.sql
-	env PGTZ=UTC psql -v ON_ERROR_STOP=1 -q -d reform-test < internal/test/sql/postgresql_data.sql
-	env PGTZ=UTC psql -v ON_ERROR_STOP=1 -q -d reform-test < internal/test/sql/postgresql_set.sql
-	env PGTZ=UTC psql -v ON_ERROR_STOP=1 -q -d reform-test-slave < internal/test/sql/postgresql_init.sql
-	env PGTZ=UTC psql -v ON_ERROR_STOP=1 -q -d reform-test-master < internal/test/sql/postgresql_init.sql
+	env PGTZ=UTC psql -v ON_ERROR_STOP=1 -q -d reform-test < internal/test/sql/postgres_data.sql
+	env PGTZ=UTC psql -v ON_ERROR_STOP=1 -q -d reform-test < internal/test/sql/postgres_set.sql
+	env PGTZ=UTC psql -v ON_ERROR_STOP=1 -q -d reform-test-slave < internal/test/sql/postgres_init.sql
+	env PGTZ=UTC psql -v ON_ERROR_STOP=1 -q -d reform-test-master < internal/test/sql/postgres_init.sql
 	go test -coverprofile=test_lib_pq.cover
 
 
