@@ -32,6 +32,7 @@ func initMSDB() *reform.DB {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	slavedb, err := sql.Open(driver, slaveSource)
 	if err != nil {
 		log.Fatal(err)
@@ -43,13 +44,17 @@ func initMSDB() *reform.DB {
 	if err != nil {
 		log.Fatal(err)
 	}
-	return reform.NewDB(db, slavedb, postgresql.Dialect, nil, true)
+
+	rdb := reform.NewDB(db, postgresql.Dialect, nil)
+	rdb.AddSlaves(slavedb)
+
+	return rdb
 }
 
 func (s *ReformSuite) TestReadNotInTransactionOnSlave() {
 	MSDB := initMSDB()
 	if MSDB == nil {
-		s.T().SkipNow()
+		s.T().Skipf("skipping master-slave tests")
 		return
 	}
 
@@ -79,7 +84,7 @@ func (s *ReformSuite) TestReadNotInTransactionOnSlave() {
 func (s *ReformSuite) TestWriteReadInTransactionOnMaster() {
 	MSDB := initMSDB()
 	if MSDB == nil {
-		s.T().SkipNow()
+		s.T().Skipf("skipping master-slave tests")
 		return
 	}
 	if _, err := MSDB.Querier.DeleteFrom(PersonTable, ""); err != nil {

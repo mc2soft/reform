@@ -92,7 +92,7 @@ func TestMain(m *testing.M) {
 		log.Fatal("reform: no dialect for driver " + driver)
 	}
 
-	DB = reform.NewDB(db, nil, dialect, nil, false)
+	DB = reform.NewDB(db, dialect, nil)
 
 	os.Exit(m.Run())
 }

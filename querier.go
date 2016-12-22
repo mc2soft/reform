@@ -2,28 +2,25 @@ package reform
 
 import (
 	"database/sql"
+	"math/rand"
 	"strings"
 	"time"
 )
 
 // Querier performs queries and commands.
 type Querier struct {
-	dbtx          DBTX
-	slavedbtx     DBTX
-	HasSlave      bool
-	InTransaction bool
+	dbtx DBTX
 	Dialect
-	Logger Logger
+	Logger        Logger
+	inTransaction bool
+	slaves        []DBTX
 }
 
-func newQuerier(dbtx DBTX, slavedbtx DBTX, dialect Dialect, logger Logger, hasSlave, inTransaction bool) *Querier {
+func newQuerier(dbtx DBTX, dialect Dialect, logger Logger) *Querier {
 	return &Querier{
-		dbtx:          dbtx,
-		slavedbtx:     slavedbtx,
-		Dialect:       dialect,
-		Logger:        logger,
-		HasSlave:      hasSlave,
-		InTransaction: inTransaction,
+		dbtx:    dbtx,
+		Dialect: dialect,
+		Logger:  logger,
 	}
 }
 
@@ -58,11 +55,18 @@ func (q *Querier) QualifiedColumns(view View) []string {
 	return res
 }
 
-func (q *Querier) selectDBForQuery(query string) DBTX {
-	if q.HasSlave && !q.InTransaction && strings.HasPrefix(strings.TrimSpace(query), "SELECT") {
-		return q.slavedbtx
+func (q *Querier) selectDBTX(query string) DBTX {
+	if q.inTransaction || len(q.slaves) == 0 || !strings.HasPrefix(strings.TrimSpace(query), "SELECT") {
+		return q.dbtx
 	}
-	return q.dbtx
+
+	ind := rand.Intn(len(q.slaves))
+	return q.slaves[ind]
+}
+
+// UseOnlyMaster tells Querier to use or not slave connections.
+func (q *Querier) UseSlaves(useSlaves bool) {
+	q.inTransaction = !useSlaves
 }
 
 // Exec executes a query without returning any rows.
@@ -70,7 +74,7 @@ func (q *Querier) selectDBForQuery(query string) DBTX {
 func (q *Querier) Exec(query string, args ...interface{}) (sql.Result, error) {
 	start := time.Now()
 	q.logBefore(query, args)
-	dbtx := q.selectDBForQuery(query)
+	dbtx := q.selectDBTX(query)
 	res, err := dbtx.Exec(query, args...)
 	q.logAfter(query, args, time.Now().Sub(start), err)
 	return res, err
@@ -81,7 +85,7 @@ func (q *Querier) Exec(query string, args ...interface{}) (sql.Result, error) {
 func (q *Querier) Query(query string, args ...interface{}) (*sql.Rows, error) {
 	start := time.Now()
 	q.logBefore(query, args)
-	dbtx := q.selectDBForQuery(query)
+	dbtx := q.selectDBTX(query)
 	rows, err := dbtx.Query(query, args...)
 	q.logAfter(query, args, time.Now().Sub(start), err)
 	return rows, err
@@ -92,7 +96,7 @@ func (q *Querier) Query(query string, args ...interface{}) (*sql.Rows, error) {
 func (q *Querier) QueryRow(query string, args ...interface{}) *sql.Row {
 	start := time.Now()
 	q.logBefore(query, args)
-	dbtx := q.selectDBForQuery(query)
+	dbtx := q.selectDBTX(query)
 	row := dbtx.QueryRow(query, args...)
 	q.logAfter(query, args, time.Now().Sub(start), nil)
 	return row
