@@ -14,7 +14,7 @@ import (
 	_ "github.com/lib/pq"
 	_ "github.com/mattn/go-sqlite3"
 
-	"gopkg.in/reform.v1"
+	"github.com/mc2soft/reform"
 )
 
 var (

@@ -10,8 +10,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"gopkg.in/reform.v1"
-	"gopkg.in/reform.v1/parse"
+	"github.com/mc2soft/reform"
+	"github.com/mc2soft/reform/parse"
 )
 
 var (

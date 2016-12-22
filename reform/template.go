@@ -3,7 +3,7 @@ package main
 import (
 	"text/template"
 
-	"gopkg.in/reform.v1/parse"
+	"github.com/mc2soft/reform/parse"
 )
 
 // StructData represents struct info for XXX_reform.go file generation.

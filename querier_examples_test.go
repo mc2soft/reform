@@ -9,10 +9,10 @@ import (
 
 	"github.com/AlekSi/pointer"
 	"github.com/enodata/faker"
+	"github.com/mc2soft/reform"
 
-	"gopkg.in/reform.v1"
-	"gopkg.in/reform.v1/dialects/postgresql"
-	. "gopkg.in/reform.v1/internal/test/models"
+	"github.com/mc2soft/reform/dialects/postgresql"
+	. "github.com/mc2soft/reform/internal/test/models"
 )
 
 func Example() {
