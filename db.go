@@ -80,5 +80,12 @@ func (db *DB) InTransaction(f func(t *TX) error) error {
 	return err
 }
 
+// MasterQuerier returns Querier that uses only master connection.
+func (db *DB) MasterQuerier() *Querier {
+	q := newQuerier(db.db, db.Dialect, db.Logger)
+	q.inTransaction = true
+	return q
+}
+
 // check interface
 var _ DBTX = new(DB)
