@@ -110,6 +110,8 @@ func (q *Querier) IsInTransaction() bool {
 func (q *Querier) AddOnCommitCall(f func() error) {
 	if q.inTransaction {
 		q.onCommitCalls = append(q.onCommitCalls, f)
+	} else {
+		panic("OnCommit callback added outside transaction")
 	}
 }
 
