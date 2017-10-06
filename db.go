@@ -69,13 +69,19 @@ func (db *DB) InTransaction(f func(t *TX) error) error {
 			_ = tx.Rollback()
 		}
 	}()
-
+	tx.Querier.onCommitCalls = tx.Querier.onCommitCalls[:0]
 	err = f(tx)
 	if err == nil {
 		err = tx.Commit()
 	}
 	if err == nil {
 		committed = true
+		for _, call := range tx.Querier.onCommitCalls {
+			err := call()
+			if err != nil {
+				return err
+			}
+		}
 	}
 	return err
 }

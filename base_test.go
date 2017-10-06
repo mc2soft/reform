@@ -242,6 +242,46 @@ func (s *ReformSuite) TestInTransaction() {
 	s.NoError(err)
 }
 
+func (s *ReformSuite) TestOnCommitCalls() {
+	setIdentityInsert(s.T(), s.q, "people", true)
+
+	err := s.q.Rollback()
+	s.Require().NoError(err)
+	s.q = nil
+
+	person := &Person{ID: 42, Email: pointer.ToString(faker.Internet().Email())}
+
+	err = DB.InTransaction(func(tx *reform.TX) error {
+		err := tx.Insert(person)
+		s.NoError(err)
+		tx.Querier.AddOnCommitCall(func() error {
+			return errors.New("epic error")
+		})
+		return nil
+	})
+	s.EqualError(err, "epic error")
+
+	var testVar1, testVar2 int
+
+	err = DB.InTransaction(func(tx *reform.TX) error {
+		err := tx.Insert(person)
+		s.NoError(err)
+		tx.Querier.AddOnCommitCall(func() error {
+			testVar1 = 5
+			return nil
+		})
+		tx.Querier.AddOnCommitCall(func() error {
+			testVar2 = 10
+			return nil
+		})
+		return nil
+	})
+	s.NoError(err)
+	s.Equal(5, testVar1)
+	s.Equal(10, testVar2)
+
+}
+
 func (s *ReformSuite) TestTimezones() {
 	setIdentityInsert(s.T(), s.q, "people", true)
 

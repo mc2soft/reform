@@ -14,6 +14,7 @@ type Querier struct {
 	Logger        Logger
 	inTransaction bool
 	slaves        []DBTX
+	onCommitCalls []func() error
 }
 
 func newQuerier(dbtx DBTX, dialect Dialect, logger Logger) *Querier {
@@ -100,6 +101,16 @@ func (q *Querier) QueryRow(query string, args ...interface{}) *sql.Row {
 	row := dbtx.QueryRow(query, args...)
 	q.logAfter(query, args, time.Now().Sub(start), nil)
 	return row
+}
+
+func (q *Querier) IsInTransaction() bool {
+	return q.inTransaction
+}
+
+func (q *Querier) AddOnCommitCall(f func() error) {
+	if q.inTransaction {
+		q.onCommitCalls = append(q.onCommitCalls, f)
+	}
 }
 
 // check interface
