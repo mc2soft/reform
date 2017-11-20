@@ -65,11 +65,6 @@ func (q *Querier) selectDBTX(query string) DBTX {
 	return q.slaves[ind]
 }
 
-// UseOnlyMaster tells Querier to use or not slave connections.
-func (q *Querier) UseSlaves(useSlaves bool) {
-	q.inTransaction = !useSlaves
-}
-
 // Exec executes a query without returning any rows.
 // The args are for any placeholder parameters in the query.
 func (q *Querier) Exec(query string, args ...interface{}) (sql.Result, error) {
@@ -108,11 +103,11 @@ func (q *Querier) IsInTransaction() bool {
 }
 
 func (q *Querier) AddOnCommitCall(f func() error) {
-	if q.inTransaction {
-		q.onCommitCalls = append(q.onCommitCalls, f)
-	} else {
+	if !q.inTransaction {
 		panic("OnCommit callback added outside transaction")
 	}
+
+	q.onCommitCalls = append(q.onCommitCalls, f)
 }
 
 // check interface
