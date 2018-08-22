@@ -56,5 +56,16 @@ func (tx *TX) Rollback() error {
 	return err
 }
 
+// Close trying to commit transaction or rollback if error was found.
+func (tx *TX) Close() error {
+	if tx == nil {
+		return nil
+	}
+	if err := tx.Commit(); err != nil {
+		return tx.Rollback()
+	}
+	return nil
+}
+
 // check interface
 var _ DBTX = new(TX)
