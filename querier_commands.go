@@ -362,6 +362,20 @@ func (q *Querier) Save(record Record) error {
 	return q.Insert(record)
 }
 
+// SaveColumns saves record specific columns in SQL database table.
+// If primary key is set, it first calls UpdateColumns and checks if row was updated.
+// If primary key is absent or no row was updated, it calls Insert.
+func (q *Querier) SaveColumns(record Record, columns ...string) error {
+	if record.HasPK() {
+		err := q.UpdateColumns(record, columns...)
+		if err != ErrNoRows {
+			return err
+		}
+	}
+
+	return q.Insert(record)
+}
+
 // Delete deletes record from SQL database table by primary key.
 //
 // Method returns ErrNoRows if no rows were deleted.
