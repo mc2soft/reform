@@ -15,9 +15,9 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 
 	"github.com/AlekSi/pointer"
-	"github.com/enodata/faker"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
+	"syreclabs.com/go/faker"
 
 	"github.com/mc2soft/reform"
 	"github.com/mc2soft/reform/dialects/mssql"

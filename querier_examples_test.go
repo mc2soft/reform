@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/AlekSi/pointer"
-	"github.com/enodata/faker"
 	"github.com/mc2soft/reform"
+	"syreclabs.com/go/faker"
 
 	"github.com/mc2soft/reform/dialects/postgresql"
 	. "github.com/mc2soft/reform/internal/test/models"

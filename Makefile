@@ -12,7 +12,7 @@ download_deps:
 				github.com/kisielk/errcheck \
 				github.com/golang/lint/golint \
 				github.com/stretchr/testify/... \
-				github.com/enodata/faker \
+				syreclabs.com/go/faker \
 				github.com/AlekSi/goveralls
 
 test:

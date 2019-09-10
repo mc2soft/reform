@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/AlekSi/pointer"
-	"github.com/enodata/faker"
+	"syreclabs.com/go/faker"
 
 	"github.com/mc2soft/reform"
 	"github.com/mc2soft/reform/dialects/postgresql"
