@@ -9,13 +9,13 @@ import (
 	"path/filepath"
 	"strings"
 
-	"gopkg.in/reform.v1"
-	"gopkg.in/reform.v1/dialects/mssql"
-	"gopkg.in/reform.v1/dialects/mysql"
-	"gopkg.in/reform.v1/dialects/postgresql"
-	"gopkg.in/reform.v1/dialects/sqlite3"
-	"gopkg.in/reform.v1/dialects/sqlserver"
-	"gopkg.in/reform.v1/parse"
+	"github.com/mc2soft/reform"
+	"github.com/mc2soft/reform/dialects/mssql"
+	"github.com/mc2soft/reform/dialects/mysql"
+	"github.com/mc2soft/reform/dialects/postgresql"
+	"github.com/mc2soft/reform/dialects/sqlite3"
+	"github.com/mc2soft/reform/dialects/sqlserver"
+	"github.com/mc2soft/reform/parse"
 )
 
 var (

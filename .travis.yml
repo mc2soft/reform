@@ -12,7 +12,7 @@ matrix:
   allow_failures:
     - go: master
 
-go_import_path: gopkg.in/reform.v1
+go_import_path: github.com/mc2soft/reform
 
 before_cache:
   - go clean -testcache

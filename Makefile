@@ -36,8 +36,8 @@ test:                           ## Run unit tests, generate models, install tool
 	go generate -v -x github.com/mc2soft/reform/internal/test/models
 	go install -v github.com/mc2soft/reform/internal/test/models
 
-	go generate -v -x gopkg.in/reform.v1/reform-db
-	go install -v gopkg.in/reform.v1/reform-db
+	go generate -v -x github.com/mc2soft/reform/reform-db
+	go install -v github.com/mc2soft/reform/reform-db
 
 
 test-db:                        ## Initialize database and run integration tests.
@@ -58,7 +58,7 @@ test-db:                        ## Initialize database and run integration tests
 	reform-db -db-driver="$(REFORM_DRIVER)" -db-source="$(REFORM_INIT_SOURCE)" exec \
 		internal/test/sql/$(REFORM_DATABASE)_combined.tmp.sql
 
-	go test $(REFORM_TEST_FLAGS) -covermode=count -coverprofile=reform-db.cover gopkg.in/reform.v1/reform-db
+	go test $(REFORM_TEST_FLAGS) -covermode=count -coverprofile=reform-db.cover github.com/mc2soft/reform/reform-db
 	go test $(REFORM_TEST_FLAGS) -covermode=count -coverprofile=reform.cover
 	gocoverutil -coverprofile=coverage.txt merge *.cover
 	rm -f *.cover

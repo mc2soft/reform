@@ -6,13 +6,13 @@ import (
 	"os"
 	"time"
 
-	"gopkg.in/reform.v1"
-	"gopkg.in/reform.v1/dialects"
-	"gopkg.in/reform.v1/dialects/mssql"
-	"gopkg.in/reform.v1/dialects/mysql"
-	"gopkg.in/reform.v1/dialects/postgresql"
-	"gopkg.in/reform.v1/dialects/sqlite3"
-	"gopkg.in/reform.v1/dialects/sqlserver"
+	"github.com/mc2soft/reform"
+	"github.com/mc2soft/reform/dialects"
+	"github.com/mc2soft/reform/dialects/mssql"
+	"github.com/mc2soft/reform/dialects/mysql"
+	"github.com/mc2soft/reform/dialects/postgresql"
+	"github.com/mc2soft/reform/dialects/sqlite3"
+	"github.com/mc2soft/reform/dialects/sqlserver"
 )
 
 // ConnectToTestDB returns open and prepared connection to test DB.

@@ -1,12 +1,12 @@
 # reform
 
 [![Release](https://img.shields.io/github/release/go-reform/reform.svg)](https://github.com/go-reform/reform/releases/latest)
-[![GoDoc](https://godoc.org/gopkg.in/reform.v1?status.svg)](https://godoc.org/gopkg.in/reform.v1)
+[![GoDoc](https://godoc.org/github.com/mc2soft/reform?status.svg)](https://godoc.org/github.com/mc2soft/reform)
 [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/go-reform/reform?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 [![Travis CI Build Status](https://travis-ci.org/go-reform/reform.svg?branch=v1-stable)](https://travis-ci.org/go-reform/reform)
 [![AppVeyor Build status](https://ci.appveyor.com/api/projects/status/kbkyjmic461xa7b3/branch/v1-stable?svg=true)](https://ci.appveyor.com/project/AlekSi/reform/branch/v1-stable)
 [![Coverage Report](https://codecov.io/gh/go-reform/reform/branch/v1-stable/graph/badge.svg)](https://codecov.io/gh/go-reform/reform)
-[![Go Report Card](https://goreportcard.com/badge/gopkg.in/reform.v1)](https://goreportcard.com/report/gopkg.in/reform.v1)
+[![Go Report Card](https://goreportcard.com/badge/github.com/mc2soft/reform)](https://goreportcard.com/report/github.com/mc2soft/reform)
 [![GolangCI](https://golangci.com/badges/github.com/golangci/golangci-lint.svg)](https://golangci.com)
 
 <a href="https://en.wikipedia.org/wiki/Peter_the_Great"><img align="right" alt="Reform gopher logo" title="Peter the Reformer" src=".github/reform.png"></a>
@@ -36,7 +36,7 @@ Notes:
 1. Make sure you are using Go 1.10+. Install or update `reform` package, `reform` and `reform-db` commands
    (see about versioning below):
     ```
-    go get -u gopkg.in/reform.v1/...
+    go get -u github.com/mc2soft/reform/...
     ```
 
 2. Use `reform-db` command to generate models for your existing database schema. For example:
@@ -67,7 +67,7 @@ Notes:
 4. Run `reform [package or directory]` or `go generate [package or file]`. This will create `person_reform.go`
    in the same package with type `PersonTable` and methods on `Person`.
 
-5. See [documentation](https://godoc.org/gopkg.in/reform.v1) how to use it. Simple example:
+5. See [documentation](https://godoc.org/github.com/mc2soft/reform) how to use it. Simple example:
 
     ```go
 	// Use reform.NewDB to create DB.
@@ -135,14 +135,14 @@ using [gopkg.in](https://gopkg.in) and filling a [changelog](CHANGELOG.md).
 
 We use branch `v1-stable` (default on Github) for v1 development and tags `v1.Y.Z` for releases.
 All v1 releases are SemVer-compatible, breaking changes will not be applied.
-Canonical import path is `gopkg.in/reform.v1`.
-`go get -u gopkg.in/reform.v1/...` will install the latest released version.
+Canonical import path is `github.com/mc2soft/reform`.
+`go get -u github.com/mc2soft/reform/...` will install the latest released version.
 To install not yet released v1 version one can do checkout manually while preserving import path:
 ```
-cd $GOPATH/src/gopkg.in/reform.v1
+cd $GOPATH/src/github.com/mc2soft/reform
 git fetch
 git checkout origin/v1-stable
-go install -v gopkg.in/reform.v1/reform
+go install -v github.com/mc2soft/reform/reform
 ```
 
 

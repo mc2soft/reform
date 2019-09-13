@@ -5,7 +5,7 @@ import (
 	"log"
 	"os"
 
-	"gopkg.in/reform.v1"
+	"github.com/mc2soft/reform"
 )
 
 // Logger is our custom logger with Debugf method.

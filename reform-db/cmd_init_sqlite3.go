@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"gopkg.in/reform.v1"
-	"gopkg.in/reform.v1/parse"
+	"github.com/mc2soft/reform"
+	"github.com/mc2soft/reform/parse"
 )
 
 // goTypeSQLite3 converts given SQL type to Go type. https://www.sqlite.org/datatype3.html

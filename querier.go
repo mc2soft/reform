@@ -105,7 +105,6 @@ func (q *Querier) Query(query string, args ...interface{}) (*sql.Rows, error) {
 	dbtx := q.selectDBTX(query)
 	rows, err := dbtx.Query(query, args...)
 	q.logAfter(query, args, time.Since(start), err)
-	q.logAfter(query, args, time.Now().Sub(start), err)
 	return rows, err
 }
 

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/AlekSi/pointer"
+	"github.com/brianvoe/gofakeit"
 	_ "github.com/denisenkom/go-mssqldb"
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/jackc/pgx/stdlib"
@@ -173,29 +174,28 @@ func (s *ReformSuite) TestPlaceholders() {
 }
 
 func (s *ReformSuite) TestOnCommitCalls() {
-	setIdentityInsert(s.T(), s.q, "people", true)
+	person := &Person{ID: 42, Email: pointer.ToString(gofakeit.Email())}
+	s.NoError(insertPersonWithID(s.T(), s.tx.Querier, person))
 
-	err := s.q.Rollback()
+	err := s.tx.Rollback()
 	s.Require().NoError(err)
 	s.q = nil
 
-	person := &Person{ID: 42, Email: pointer.ToString(faker.Internet().Email())}
-
+	s.Equal(reform.ErrNoRows, DB.Reload(person))
 	err = DB.InTransaction(func(tx *reform.TX) error {
-		err := tx.Insert(person)
-		s.NoError(err)
+		s.NoError(insertPersonWithID(s.T(), tx.Querier, person))
 		tx.Querier.AddOnCommitCall(func() error {
 			return errors.New("epic error")
 		})
 		return nil
 	})
 	s.EqualError(err, "epic error")
+	s.Equal(reform.ErrNoRows, DB.Reload(person))
 
 	var testVar1, testVar2 int
 
 	err = DB.InTransaction(func(tx *reform.TX) error {
-		err := tx.Insert(person)
-		s.NoError(err)
+		s.NoError(insertPersonWithID(s.T(), tx.Querier, person))
 		tx.Querier.AddOnCommitCall(func() error {
 			testVar1 = 5
 			return nil

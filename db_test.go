@@ -3,14 +3,12 @@ package reform_test
 import (
 	"errors"
 
-	"github.com/mc2soft/reform"
-
 	"github.com/AlekSi/pointer"
 	"github.com/brianvoe/gofakeit"
 
-	"gopkg.in/reform.v1"
-	"gopkg.in/reform.v1/dialects/postgresql"
-	. "gopkg.in/reform.v1/internal/test/models"
+	"github.com/mc2soft/reform"
+	"github.com/mc2soft/reform/dialects/postgresql"
+	. "github.com/mc2soft/reform/internal/test/models"
 )
 
 func (s *ReformSuite) TestBeginCommit() {
