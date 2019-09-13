@@ -190,6 +190,7 @@ func (s *ReformSuite) TestOnCommitCalls() {
 		return nil
 	})
 	s.EqualError(err, "epic error")
+	s.NoError(DB.Delete(person))
 	s.Equal(reform.ErrNoRows, DB.Reload(person))
 
 	var testVar1, testVar2 int
