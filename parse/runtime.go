@@ -7,8 +7,7 @@ import (
 )
 
 func objectGoType(t reflect.Type, structT reflect.Type) string {
-	switch t.Kind() {
-	case reflect.Ptr:
+	if t.Kind() == reflect.Ptr {
 		return "*" + objectGoType(t.Elem(), structT)
 	}
 
@@ -49,7 +48,7 @@ func Object(obj interface{}, schema, table string) (res *StructInfo, err error) 
 	for i := 0; i < t.NumField(); i++ {
 		f := t.Field(i)
 		tag := f.Tag.Get("reform")
-		if len(tag) == 0 {
+		if tag == "" || tag == "-" {
 			continue
 		}
 
@@ -68,11 +67,13 @@ func Object(obj interface{}, schema, table string) (res *StructInfo, err error) 
 		if column == "" {
 			return nil, fmt.Errorf(`reform: %s has field %s with invalid "reform:" tag value, it is not allowed`, res.Type, f.Name)
 		}
-		var pkType string
+		typ := objectGoType(f.Type, t)
 		if isPK {
-			pkType = objectGoType(f.Type, t)
-			if strings.HasPrefix(pkType, "*") {
+			if strings.HasPrefix(typ, "*") {
 				return nil, fmt.Errorf(`reform: %s has pointer field %s with with "pk" label in "reform:" tag, it is not allowed`, res.Type, f.Name)
+			}
+			if strings.HasPrefix(typ, "[") {
+				return nil, fmt.Errorf(`reform: %s has slice field %s with with "pk" label in "reform:" tag, it is not allowed`, res.Type, f.Name)
 			}
 			if res.PKFieldIndex >= 0 {
 				return nil, fmt.Errorf(`reform: %s has field %s with with duplicate "pk" label in "reform:" tag (first used by %s), it is not allowed`, res.Type, f.Name, res.Fields[res.PKFieldIndex].Name)
@@ -81,7 +82,7 @@ func Object(obj interface{}, schema, table string) (res *StructInfo, err error) 
 
 		res.Fields = append(res.Fields, FieldInfo{
 			Name:   f.Name,
-			PKType: pkType,
+			Type:   typ,
 			Column: column,
 		})
 		if isPK {
@@ -90,8 +91,7 @@ func Object(obj interface{}, schema, table string) (res *StructInfo, err error) 
 		n++
 	}
 
-	err = checkFields(res)
-	if err != nil {
+	if err = checkFields(res); err != nil {
 		return nil, err
 	}
 

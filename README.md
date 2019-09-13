@@ -1,11 +1,15 @@
 # reform
+
+[![Release](https://img.shields.io/github/release/go-reform/reform.svg)](https://github.com/go-reform/reform/releases/latest)
 [![GoDoc](https://godoc.org/gopkg.in/reform.v1?status.svg)](https://godoc.org/gopkg.in/reform.v1)
 [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/go-reform/reform?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 [![Travis CI Build Status](https://travis-ci.org/go-reform/reform.svg?branch=v1-stable)](https://travis-ci.org/go-reform/reform)
-[![Drone CI Build Status](https://drone.aleksi.io/api/badges/go-reform/reform/status.svg)](https://drone.aleksi.io/go-reform/reform)
 [![AppVeyor Build status](https://ci.appveyor.com/api/projects/status/kbkyjmic461xa7b3/branch/v1-stable?svg=true)](https://ci.appveyor.com/project/AlekSi/reform/branch/v1-stable)
-[![Coverage Status](https://coveralls.io/repos/github/go-reform/reform/badge.svg?branch=v1-stable)](https://coveralls.io/github/go-reform/reform?branch=v1-stable)
+[![Coverage Report](https://codecov.io/gh/go-reform/reform/branch/v1-stable/graph/badge.svg)](https://codecov.io/gh/go-reform/reform)
 [![Go Report Card](https://goreportcard.com/badge/gopkg.in/reform.v1)](https://goreportcard.com/report/gopkg.in/reform.v1)
+[![GolangCI](https://golangci.com/badges/github.com/golangci/golangci-lint.svg)](https://golangci.com)
+
+<a href="https://en.wikipedia.org/wiki/Peter_the_Great"><img align="right" alt="Reform gopher logo" title="Peter the Reformer" src=".github/reform.png"></a>
 
 A better ORM for Go and `database/sql`.
 
@@ -13,18 +17,35 @@ It uses non-empty interfaces, code generation (`go generate`), and initializatio
 as opposed to `interface{}`, type system sidestepping, and runtime reflection. It will be kept simple.
 
 Supported SQL dialects:
-* PostgreSQL (tested with [`github.com/lib/pq`](https://github.com/lib/pq)).
-* MySQL (tested with [`github.com/go-sql-driver/mysql`](https://github.com/go-sql-driver/mysql)).
-* SQLite3 (tested with [`github.com/mattn/go-sqlite3`](https://github.com/mattn/go-sqlite3)).
-* Microsoft SQL Server (tested with [`github.com/denisenkom/go-mssqldb`](https://github.com/denisenkom/go-mssqldb)).
+
+| RDBMS                | Library and drivers                                                                                 | Status
+| -----                | -------------------                                                                                 | ------
+| PostgreSQL           | [github.com/lib/pq](https://github.com/lib/pq) (`postgres`)                                         | Stable. Tested with all [supported](https://www.postgresql.org/support/versioning/) versions.
+|                      | [github.com/jackc/pgx/stdlib](https://github.com/jackc/pgx) (`pgx`)                                 | Stable. Tested with all [supported](https://www.postgresql.org/support/versioning/) versions.
+| MySQL                | [github.com/go-sql-driver/mysql](https://github.com/go-sql-driver/mysql) (`mysql`)                  | Stable. Tested with all [supported](https://www.mysql.com/support/supportedplatforms/database.html) versions.
+| SQLite3              | [github.com/mattn/go-sqlite3](https://github.com/mattn/go-sqlite3) (`sqlite3`)                      | Stable.
+| Microsoft SQL Server | [github.com/denisenkom/go-mssqldb](https://github.com/denisenkom/go-mssqldb) (`sqlserver`, `mssql`) | Stable. Tested on Windows with: SQL2008R2SP2, SQL2012SP1, SQL2014, SQL2016. On Linux with: [`microsoft/mssql-server-linux:latest` Docker image](https://hub.docker.com/r/microsoft/mssql-server-linux/).
+
+Notes:
+* [`clientFoundRows=true` flag](https://github.com/go-sql-driver/mysql#clientfoundrows) is required for `mysql` driver.
+* `mssql` driver is [deprecated](https://github.com/denisenkom/go-mssqldb#deprecated) (but not `sqlserver` driver).
 
 
 ## Quickstart
 
-1. Make sure you are using Go 1.6+.
-2. Install or update `reform` package and command: `go get -u gopkg.in/reform.v1/reform` (see about versioning below).
-3. Define a model – `struct` representing a table or view row. For example, store this in file `person.go`:
+1. Make sure you are using Go 1.10+. Install or update `reform` package, `reform` and `reform-db` commands
+   (see about versioning below):
+    ```
+    go get -u gopkg.in/reform.v1/...
+    ```
 
+2. Use `reform-db` command to generate models for your existing database schema. For example:
+    ```
+    reform-db -db-driver=sqlite3 -db-source=example.sqlite3 init
+    ```
+
+3. Update generated models or write your own – `struct` representing a table or view row. For example,
+   store this in file `person.go`:
     ```go
     //go:generate reform
 
@@ -39,11 +60,13 @@ Supported SQL dialects:
     ```
 
     Magic comment `//reform:people` links this model to `people` table or view in SQL database.
-    First value in `reform` tag is a column name. `pk` marks primary key.
-    Use pointers for nullable fields.
+    The first value in field's `reform` tag is a column name. `pk` marks primary key.
+    Use value `-` or omit tag completely to skip a field.
+    Use pointers (recommended) or `sql.NullXXX` types for nullable fields.
 
 4. Run `reform [package or directory]` or `go generate [package or file]`. This will create `person_reform.go`
    in the same package with type `PersonTable` and methods on `Person`.
+
 5. See [documentation](https://godoc.org/gopkg.in/reform.v1) how to use it. Simple example:
 
     ```go
@@ -113,7 +136,7 @@ using [gopkg.in](https://gopkg.in) and filling a [changelog](CHANGELOG.md).
 We use branch `v1-stable` (default on Github) for v1 development and tags `v1.Y.Z` for releases.
 All v1 releases are SemVer-compatible, breaking changes will not be applied.
 Canonical import path is `gopkg.in/reform.v1`.
-`go get -u gopkg.in/reform.v1/reform` will install latest released version.
+`go get -u gopkg.in/reform.v1/...` will install the latest released version.
 To install not yet released v1 version one can do checkout manually while preserving import path:
 ```
 cd $GOPATH/src/gopkg.in/reform.v1
@@ -121,9 +144,6 @@ git fetch
 git checkout origin/v1-stable
 go install -v gopkg.in/reform.v1/reform
 ```
-
-Branch `v2-unstable` is used for v2 development. It doesn't have any releases yet, and no compatibility is guaranteed.
-Canonical import path is `gopkg.in/reform.v2-unstable`.
 
 
 ## Additional packages
@@ -134,11 +154,20 @@ Canonical import path is `gopkg.in/reform.v2-unstable`.
 ## Caveats and limitations
 
 * There should be zero `pk` fields for Struct and exactly one `pk` field for Record.
-  Composite primary keys are not supported.
+  Composite primary keys are not supported ([#114](https://github.com/go-reform/reform/issues/114)).
 * `pk` field can't be a pointer (`== nil` [doesn't work](https://golang.org/doc/faq#nil_error)).
 * Database row can't have a Go's zero value (0, empty string, etc.) in primary key column.
 
 
+## License
+
+Code is covered by standard MIT-style license. Copyright (c) 2016-2018 Alexey Palazhchenko.
+See [LICENSE](LICENSE) for details. Note that generated code is covered by the terms of your choice.
+
+The reform gopher was drawn by Natalya Glebova. Please use it only as reform logo.
+It is based on the original design by Renée French, released under [Creative Commons Attribution 3.0 USA license](https://creativecommons.org/licenses/by/3.0/).
+
+
 ## Contributing
 
-See [Contributing Guidelines](.github/CONTRIBUTING.md)
+See [Contributing Guidelines](.github/CONTRIBUTING.md).

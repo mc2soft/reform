@@ -4,31 +4,42 @@ clone_folder: c:\gopath\src\gopkg.in\reform.v1
 
 environment:
   GOPATH: c:\gopath
-  TARGET: mssql
-  COVERALLS_TOKEN:
-    secure: +o9WB0T57udDJzTTSmKMg0O5hrP2e0rAuBL36/foBRYTg8VKccp2G8ovxJi4hsmD
   matrix:
+    - REFORM_TARGETS: sqlite3
+
     - REFORM_SQL_INSTANCE: SQL2008R2SP2
+      REFORM_TARGETS: win-mssql
+    - REFORM_SQL_INSTANCE: SQL2008R2SP2
+      REFORM_TARGETS: win-sqlserver
+
     - REFORM_SQL_INSTANCE: SQL2012SP1
+      REFORM_TARGETS: win-mssql
+    - REFORM_SQL_INSTANCE: SQL2012SP1
+      REFORM_TARGETS: win-sqlserver
+
     - REFORM_SQL_INSTANCE: SQL2014
+      REFORM_TARGETS: win-mssql
+    - REFORM_SQL_INSTANCE: SQL2014
+      REFORM_TARGETS: win-sqlserver
+
     - REFORM_SQL_INSTANCE: SQL2016
+      REFORM_TARGETS: win-mssql
+    - REFORM_SQL_INSTANCE: SQL2016
+      REFORM_TARGETS: win-sqlserver
 
 install:
-  - powershell -file .github\appveyor-prepare-mssql.ps1
-  - set PATH=%PATH%;C:\msys64\mingw64\bin;%GOPATH%\bin
+  - if defined REFORM_SQL_INSTANCE powershell -file .github\appveyor-prepare-mssql.ps1
+  - set PATH=C:\msys64\usr\bin;C:\msys64\mingw64\bin;%GOPATH%\bin;%PATH%
+  - pacman -Rsc --noconfirm gcc
 
   - go version
-  # - echo %PATH%
-  # - go env
-  # - where mingw32-make
-  # - where gcc
 
 build_script:
-  - mingw32-make download_deps
+  - make deps
 
 test_script:
-  - mingw32-make test
-  - mingw32-make %TARGET%
+  - make %REFORM_TARGETS%
 
 on_success:
-  - if defined COVERALLS_TOKEN goveralls -coverprofile=%TARGET%.cover -service=
+  - curl -s -o codecov https://codecov.io/bash
+  - bash codecov -f coverage.txt -X fix -e REFORM_TARGETS,REFORM_SQL_INSTANCE
