@@ -1,99 +1,86 @@
 package reform
 
 import (
-	"fmt"
+	"log"
 	"reflect"
-	"strings"
+	"regexp"
 	"time"
+
+	"github.com/mc2soft/go-sqltypes"
 )
 
-// Inspect returns suitable for logging representation of a query argument.
-func Inspect(arg interface{}, addType bool) string {
-	var s string
-	v := reflect.ValueOf(arg)
-	switch v.Kind() {
-	case reflect.Ptr:
-		if v.IsNil() {
-			s = "<nil>"
-		} else {
-			s = Inspect(v.Elem().Interface(), false)
+type logLogger struct {
+	*log.Logger
+}
+
+var (
+	timeType, jsonType reflect.Type
+	sqlPlaceholderRe   *regexp.Regexp
+)
+
+func (l *logLogger) Log(query string, args []interface{}) {
+	values := make([]interface{}, len(args))
+
+	// trying to make log look like SQL query, this is not supposed
+	// to be correct translation to SQL
+	for i, p := range args {
+		r := reflect.ValueOf(p)
+		if r.IsValid() {
+			kind := r.Kind()
+
+			// if value is pointer, replace it with NULL if
+			// pointer is nil, otherwise use pointer value
+			if kind == reflect.Ptr {
+				if !r.IsNil() {
+					r = r.Elem()
+					p = r.Interface()
+				} else {
+					p = "NULL"
+				}
+			}
+
+			// print time value as in SQL
+			if kind == reflect.Struct && r.Type() == timeType {
+				p = r.Interface().(time.Time).Format("2006-01-02 15:04:05")
+				kind = reflect.String
+			}
+
+			// print json as string
+			if r.Type() == jsonType {
+				p = string(r.Interface().(sqltypes.JsonText))
+				kind = reflect.String
+			}
+
+			// boolean as in PostgreSQL 't'/'f'
+			if kind == reflect.Bool {
+				if r.Bool() {
+					p = "t"
+				} else {
+					p = "f"
+				}
+				kind = reflect.String
+			}
+
+			// string quoting, simplified with just single quotes
+			if kind == reflect.String {
+				p = "'" + p.(string) + "'"
+			}
 		}
 
-	case reflect.String:
-		s = fmt.Sprintf("%#q", arg)
-
-	default:
-		s = fmt.Sprintf("%v", arg)
+		values[i] = p
 	}
 
-	if addType {
-		s += fmt.Sprintf(" (%T)", arg)
-	}
-	return s
+	query = sqlPlaceholderRe.ReplaceAllString(query, "%[$1]v")
+
+	l.Printf(query, values...)
 }
 
-// Logger is responsible to log queries before and after their execution.
-type Logger interface {
-	// Before logs query before execution.
-	Before(query string, args []interface{})
-
-	// After logs query after execution.
-	After(query string, args []interface{}, d time.Duration, err error)
+func NewLogLogger(l *log.Logger) Logger {
+	return &logLogger{l}
 }
 
-// Printf is a (fmt.Printf|log.Printf|testing.T.Logf)-like function.
-type Printf func(format string, a ...interface{})
-
-// PrintfLogger is a simple query logger.
-type PrintfLogger struct {
-	LogTypes bool
-	printf   Printf
+func init() {
+	sqlPlaceholderRe = regexp.MustCompile("\\$(\\d+)")
+	timeType = reflect.TypeOf(time.Time{})
+	jsonType = reflect.TypeOf(sqltypes.JsonText(nil))
 }
-
-// NewPrintfLogger creates a new simple query logger for any Printf-like function.
-func NewPrintfLogger(printf Printf) *PrintfLogger {
-	return &PrintfLogger{false, printf}
-}
-
-// Before logs query before execution.
-func (pl *PrintfLogger) Before(query string, args []interface{}) {
-	// fast path
-	if args == nil {
-		pl.printf(">>> %s", query)
-		return
-	}
-
-	ss := make([]string, len(args))
-	for i, arg := range args {
-		ss[i] = Inspect(arg, pl.LogTypes)
-	}
-
-	pl.printf(">>> %s [%s]", query, strings.Join(ss, ", "))
-}
-
-// After logs query after execution.
-func (pl *PrintfLogger) After(query string, args []interface{}, d time.Duration, err error) {
-	// fast path
-	if args == nil {
-		msg := fmt.Sprintf("%s %s", query, d)
-		if err != nil {
-			msg += ": " + err.Error()
-		}
-		pl.printf("<<< %s", msg)
-		return
-	}
-
-	ss := make([]string, len(args))
-	for i, arg := range args {
-		ss[i] = Inspect(arg, pl.LogTypes)
-	}
-
-	msg := fmt.Sprintf("%s [%s] %s", query, strings.Join(ss, ", "), d)
-	if err != nil {
-		msg += ": " + err.Error()
-	}
-	pl.printf("<<< %s", msg)
-}
-
-// check interface
-var _ Logger = new(PrintfLogger)
