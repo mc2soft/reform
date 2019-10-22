@@ -1,7 +1,11 @@
-// Package mssql implements reform.Dialect for Microsoft SQL Server.
+// Package mssql implements reform.Dialect for Microsoft SQL Server (mssql driver).
+//
+// Deprecated: Use sqlserver dialect instead. https://github.com/denisenkom/go-mssqldb#deprecated
 package mssql
 
-import "github.com/mc2soft/reform"
+import (
+	"github.com/mc2soft/reform"
+)
 
 type mssql struct{}
 
@@ -38,6 +42,8 @@ func (mssql) DefaultValuesMethod() reform.DefaultValuesMethod {
 }
 
 // Dialect implements reform.Dialect for Microsoft SQL Server.
+//
+// Deprecated: Use sqlserver.Dialect instead. https://github.com/denisenkom/go-mssqldb#deprecated
 var Dialect mssql
 
 // check interface

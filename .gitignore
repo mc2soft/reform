@@ -1,3 +1,6 @@
 .vscode/
-*.sqlite3
+.idea/
 *.cover
+coverage.txt
+internal/test/sql/*_combined.tmp.sql
+reform-database.sqlite3
