@@ -1,6 +1,7 @@
 package reform_test
 
 import (
+	"database/sql"
 	"errors"
 	"fmt"
 	"log"
@@ -20,7 +21,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/mc2soft/reform"
-	"github.com/mc2soft/reform/dialects/mssql"
+	"github.com/mc2soft/reform/dialects/mssql" //nolint:staticcheck
 	"github.com/mc2soft/reform/dialects/postgresql"
 	"github.com/mc2soft/reform/dialects/sqlite3"
 	"github.com/mc2soft/reform/dialects/sqlserver"
@@ -29,6 +30,8 @@ import (
 )
 
 var (
+	// DB is a global connection pool shared by tests and examples.
+	// Deprecated: do not add new tests using it as using a global pool makes tests more brittle.
 	DB *reform.DB
 )
 
@@ -38,7 +41,9 @@ func TestMain(m *testing.M) {
 }
 
 // checkForeignKeys checks that foreign keys are still enforced for sqlite3.
-func checkForeignKeys(t *testing.T, q *reform.Querier) {
+func checkForeignKeys(t testing.TB, q *reform.Querier) {
+	t.Helper()
+
 	if q.Dialect != sqlite3.Dialect {
 		return
 	}
@@ -50,8 +55,10 @@ func checkForeignKeys(t *testing.T, q *reform.Querier) {
 }
 
 // withIdentityInsert executes an action with MS SQL IDENTITY_INSERT enabled for a table
-func withIdentityInsert(t *testing.T, q *reform.Querier, table string, action func()) {
-	if q.Dialect != mssql.Dialect && q.Dialect != sqlserver.Dialect {
+func withIdentityInsert(t testing.TB, q *reform.Querier, table string, action func()) {
+	t.Helper()
+
+	if q.Dialect != mssql.Dialect && q.Dialect != sqlserver.Dialect { //nolint:staticcheck
 		action()
 		return
 	}
@@ -67,12 +74,53 @@ func withIdentityInsert(t *testing.T, q *reform.Querier, table string, action fu
 	require.NoError(t, err)
 }
 
-func insertPersonWithID(t *testing.T, q *reform.Querier, str reform.Struct) error {
+func insertPersonWithID(t testing.TB, q *reform.Querier, str reform.Struct) error {
+	t.Helper()
+
 	var err error
 	withIdentityInsert(t, q, "people", func() { err = q.Insert(str) })
 	return err
 }
 
+// setupDB creates new database connection pool.
+func setupDB(t testing.TB) *reform.DB {
+	t.Helper()
+
+	if testing.Short() {
+		t.Skip("skipping in short mode")
+	}
+
+	db := internal.ConnectToTestDB()
+	pl := reform.NewPrintfLogger(t.Logf)
+	pl.LogTypes = true
+	db.Logger = pl
+	db.Querier = db.WithTag("test:%s", t.Name())
+
+	checkForeignKeys(t, db.Querier)
+	return db
+}
+
+// setupTX creates new database connection pool and starts a new transaction.
+func setupTX(t testing.TB) (*reform.DB, *reform.TX) {
+	t.Helper()
+
+	db := setupDB(t)
+
+	tx, err := db.Begin()
+	require.NoError(t, err)
+	return db, tx
+}
+
+// teardown closes database connection pool.
+func teardown(t testing.TB, db *reform.DB) {
+	t.Helper()
+
+	err := db.DBInterface().(*sql.DB).Close()
+	require.NoError(t, err)
+}
+
+// Deprecated: do not add new test to this suite, use Go subtests instead.
+// TODO Remove.
 type ReformSuite struct {
 	suite.Suite
 	tx *reform.TX
@@ -83,30 +131,39 @@ func TestReformSuite(t *testing.T) {
 	suite.Run(t, new(ReformSuite))
 }
 
+// SetupTest configures global connection pool and starts a new transaction.
 func (s *ReformSuite) SetupTest() {
+	if testing.Short() {
+		s.T().Skip("skipping in short mode")
+	}
+
 	pl := reform.NewPrintfLogger(s.T().Logf)
 	pl.LogTypes = true
 	DB.Logger = pl
-
-	var err error
-	s.tx, err = DB.Begin()
-	s.Require().NoError(err)
-
-	s.q = s.tx.WithTag("test")
-}
-
-func (s *ReformSuite) TearDownTest() {
-	// some transactional tests rollback and nilify q
-	if s.q != nil {
-		checkForeignKeys(s.T(), s.q)
-
-		err := s.tx.Rollback()
-		s.Require().NoError(err)
-	}
+	DB.Querier = DB.WithTag("test:%s", s.T().Name())
 
 	checkForeignKeys(s.T(), DB.Querier)
 
+	tx, err := DB.Begin()
+	s.Require().NoError(err)
+	s.tx = tx
+	s.q = tx.Querier
+}
+
+// TearDownTest rollbacks transaction created by SetupTest.
+func (s *ReformSuite) TearDownTest() {
+	if s.tx == nil {
+		panic(s.T().Name() + ": tx is nil")
+	}
+	if s.q == nil {
+		panic(s.T().Name() + ": q is nil")
+	}
+
+	checkForeignKeys(s.T(), s.q)
+	s.Require().NoError(s.tx.Rollback())
+
 	DB.Logger = nil
+	DB.Querier = DB.WithTag("")
 }
 
 func (s *ReformSuite) RestartTransaction() {
@@ -246,8 +303,8 @@ func (s *ReformSuite) TestTimezones() {
 			log.Printf("%s read from database as %q and %s", t, createdS, createdT)
 		}
 
-		err = rows.Close()
-		s.NoError(err)
+		s.NoError(rows.Err())
+		s.NoError(rows.Close())
 	}
 
 	{
@@ -263,7 +320,6 @@ func (s *ReformSuite) TestTimezones() {
 		q = `SELECT start, start FROM projects WHERE id IN ('11', '12', '13', '14') ORDER BY id`
 		rows, err := s.q.Query(q)
 		s.NoError(err)
-		defer rows.Close()
 
 		for _, t := range []time.Time{t1, t2, tVLAT, tHST} {
 			var startS string
@@ -274,8 +330,8 @@ func (s *ReformSuite) TestTimezones() {
 			log.Printf("%s read from database as %q and %s", t, startS, startT)
 		}
 
-		err = rows.Close()
-		s.NoError(err)
+		s.NoError(rows.Err())
+		s.NoError(rows.Close())
 	}
 }
 
@@ -285,9 +341,10 @@ func (s *ReformSuite) TestColumns() {
 	rows, err := s.q.SelectRows(PersonTable, "WHERE name = "+s.q.Placeholder(1)+" ORDER BY id", "Elfrieda Abbott")
 	s.NoError(err)
 	s.Require().NotNil(rows)
-	defer rows.Close()
+	s.NoError(rows.Err())
 
 	columns, err := rows.Columns()
 	s.NoError(err)
 	s.Equal(PersonTable.Columns(), columns)
+	s.NoError(rows.Close())
 }

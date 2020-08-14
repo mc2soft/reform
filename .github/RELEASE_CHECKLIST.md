@@ -7,4 +7,7 @@
 5. Make tag.
 6. Push it!
 7. Make [release](https://github.com/go-reform/reform/releases).
-8. Refresh [godoc.org](https://godoc.org/github.com/mc2soft/reform), [Go Report Card](https://goreportcard.com/report/github.com/mc2soft/reform).
+8. Refresh
+   * [pkg.go.dev](https://pkg.go.dev/github.com/mc2soft/reform?)
+   * [godoc.org](https://godoc.org/github.com/mc2soft/reform)
+   * [Go Report Card](https://goreportcard.com/report/github.com/mc2soft/reform).
