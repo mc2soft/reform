@@ -24,10 +24,11 @@ import (
 var (
 	logger *internal.Logger
 
-	debugF  = flag.Bool("debug", false, "Enable debug logging")
-	driverF = flag.String("db-driver", "", "Database driver (required)")
-	sourceF = flag.String("db-source", "", "Database connection string (required)")
-	waitF   = flag.Duration("db-wait", 0, "Wait for database connection to be established, retrying every second")
+	debugF   = flag.Bool("debug", false, "Enable debug logging")
+	driverF  = flag.String("db-driver", "", "Database driver (required)")
+	sourceF  = flag.String("db-source", "", "Database connection string (required)")
+	waitF    = flag.Duration("db-wait", 0, "Wait for database connection to be established, retrying every second")
+	versionF = flag.Bool("version", false, "Print version and exit")
 )
 
 func init() {
@@ -83,24 +84,39 @@ func getDB() *reform.DB {
 func main() {
 	flag.Parse()
 
-	logger = internal.NewLogger("reform-db: ", *debugF)
+	if *versionF {
+		fmt.Println(reform.Version)
+		os.Exit(0)
+	}
 
 	if flag.NArg() == 0 {
 		flag.Usage()
 		os.Exit(1)
 	}
 
+	*driverF = strings.TrimSpace(*driverF)
+	*sourceF = strings.TrimSpace(*sourceF)
+
+	logger = internal.NewLogger("reform-db: ", *debugF)
+
+	// flagsets used below are created with ExitOnError, so Parse() is not expected to return errors
 	switch flag.Arg(0) {
 	case "exec":
-		execFlags.Parse(flag.Args()[1:])
+		if err := execFlags.Parse(flag.Args()[1:]); err != nil {
+			panic(err)
+		}
 		cmdExec(getDB(), execFlags.Args())
 
 	case "query":
-		queryFlags.Parse(flag.Args()[1:])
+		if err := queryFlags.Parse(flag.Args()[1:]); err != nil {
+			panic(err)
+		}
 		cmdQuery(getDB(), queryFlags.Args())
 
 	case "init":
-		initFlags.Parse(flag.Args()[1:])
+		if err := initFlags.Parse(flag.Args()[1:]); err != nil {
+			panic(err)
+		}
 
 		if initFlags.NArg() > 1 {
 			logger.Fatalf("Expected zero or one argument for %q, got %d", "init", initFlags.NArg())

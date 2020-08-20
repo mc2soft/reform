@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/mc2soft/reform"
-	"github.com/mc2soft/reform/dialects/mssql"
+	"github.com/mc2soft/reform/dialects/mssql" //nolint:staticcheck
 	"github.com/mc2soft/reform/dialects/mysql"
 	"github.com/mc2soft/reform/dialects/postgresql"
 	"github.com/mc2soft/reform/dialects/sqlite3"
@@ -43,7 +43,7 @@ and edited manually.
 
 func gofmt(path string) {
 	if *gofmtF {
-		cmd := exec.Command("gofmt", "-s", "-w", path)
+		cmd := exec.Command("gofmt", "-s", "-w", path) //nolint:gosec
 		logger.Debugf(strings.Join(cmd.Args, " "))
 		b, err := cmd.CombinedOutput()
 		if err != nil {
@@ -186,7 +186,9 @@ func cmdInit(db *reform.DB, dir string) {
 	case sqlite3.Dialect:
 		// SQLite is special
 		structs = initModelsSQLite3(db)
-	case mssql.Dialect, sqlserver.Dialect:
+	case mssql.Dialect: //nolint:staticcheck
+		fallthrough
+	case sqlserver.Dialect:
 		// catalog is a currently selected database (reform-database, master, etc.)
 		// schema is MS SQL schema (dbo, guest, sys, information_schema, etc.)
 		structs = initModelsInformationSchema(db, `WHERE table_schema = SCHEMA_NAME()`, goTypeMSSQL)
