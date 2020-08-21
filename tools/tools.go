@@ -1,6 +1,6 @@
 // +build tools
 
-package tools // import "gopkg.in/reform.v1/tools"
+package tools // import "github.com/mc2soft/reform/tools"
 
 import (
 	_ "github.com/AlekSi/gocoverutil"

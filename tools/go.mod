@@ -1,4 +1,4 @@
-module gopkg.in/reform.v1/tools
+module github.com/mc2soft/reform/tools
 
 go 1.13
 

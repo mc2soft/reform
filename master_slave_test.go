@@ -1,13 +1,8 @@
 package reform_test
 
+// TODO
+/*
 import (
-	"database/sql"
-	"log"
-	"os"
-
-	"github.com/AlekSi/pointer"
-	"github.com/mc2soft/reform"
-	"github.com/mc2soft/reform/dialects/postgresql"
 	. "github.com/mc2soft/reform/internal/test/models"
 )
 
@@ -129,3 +124,4 @@ func (s *ReformSuite) TestWriteReadInTransactionOnMaster() {
 	}
 	tx.Rollback()
 }
+*/
