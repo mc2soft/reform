@@ -39,19 +39,12 @@ func NewTX(tx *sql.Tx, dialect Dialect, logger Logger) *TX {
 // Can be used for easier integration with existing code or for passing test doubles.
 // Logger can be nil.
 func NewTXFromInterface(tx TXInterface, dialect Dialect, logger Logger) *TX {
-	// TODO
-	/*
-		q := newQuerier(tx, dialect, logger)
-		q.inTransaction = true
-		return &TX{
-			Querier: q,
-	*/
 	return newTX(context.Background(), tx, dialect, logger)
 }
 
 func newTX(ctx context.Context, tx TXInterface, dialect Dialect, logger Logger) *TX {
 	return &TX{
-		Querier: newQuerier(ctx, tx, "", dialect, logger),
+		Querier: newQuerier(ctx, tx, "", dialect, logger, true, nil, nil),
 		tx:      tx,
 	}
 }

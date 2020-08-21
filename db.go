@@ -41,7 +41,7 @@ func NewDB(db *sql.DB, dialect Dialect, logger Logger) *DB {
 // Logger can be nil.
 func NewDBFromInterface(db DBInterface, dialect Dialect, logger Logger) *DB {
 	return &DB{
-		Querier: newQuerier(context.Background(), db, "", dialect, logger),
+		Querier: newQuerier(context.Background(), db, "", dialect, logger, false, nil, nil),
 		db:      db,
 	}
 }
@@ -51,15 +51,12 @@ func (db *DB) DBInterface() DBInterface {
 	return db.db
 }
 
-// TODO:
-/*
 // AddSlaves adds slave *sql.DB connections.
 func (db *DB) AddSlaves(slaves ...*sql.DB) {
 	for _, s := range slaves {
-		db.slaves = append(db.slaves, newQuerier(s, db.Dialect, db.Logger))
+		db.slaves = append(db.slaves, newQuerier(context.Background(), s, "", db.Dialect, db.Logger, false, nil, nil))
 	}
 }
-*/
 
 // Begin starts transaction with Querier's context and default options.
 func (db *DB) Begin() (*TX, error) {
@@ -107,22 +104,23 @@ func (db *DB) InTransactionContext(ctx context.Context, opts *sql.TxOptions, f f
 	if err == nil {
 		committed = true
 		for _, call := range tx.Querier.onCommitCalls {
-			err := call()
-			if err != nil {
-				return err
+			if e := call(); e != nil {
+				return e
 			}
 		}
 	}
 	return err
 }
 
-// TODO
-/*
 // MasterQuerier returns Querier that uses only master connection.
 func (db *DB) MasterQuerier() *Querier {
-	return newQuerier(db.db, db.Dialect, db.Logger)
+	q := db.clone()
+	q.inTransaction = false
+	q.slaves = nil
+	q.onCommitCalls = nil
+
+	return q
 }
-*/
 
 // check interfaces
 var (

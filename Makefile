@@ -37,12 +37,14 @@ test-unit:
 	rm -f internal/test/models/*_reform.go
 	rm -f reform-db/*_reform.go
 
-	go install -v gopkg.in/reform.v1/reform
-	go test -count=1 -race gopkg.in/reform.v1/parse
-	go test -count=1 -covermode=count -coverprofile=parse.cover gopkg.in/reform.v1/parse
-	go generate -v -x gopkg.in/reform.v1/internal/test/models
-	go install -v gopkg.in/reform.v1/internal/test/models
+	go install -v github.com/mc2soft/reform/reform
+	go test -count=1 -race github.com/mc2soft/reform/parse
+	go test -count=1 -covermode=count -coverprofile=parse.cover github.com/mc2soft/reform/parse
+	go generate -v -x github.com/mc2soft/reform/internal/test/models
+	go install -v github.com/mc2soft/reform/internal/test/models
 
+	go generate -v -x github.com/mc2soft/reform/reform-db
+	go install -v github.com/mc2soft/reform/reform-db
 
 test-db-init:
 	# recreate and initialize database
@@ -60,49 +62,6 @@ test-db:
 	# https://github.com/go-reform/reform/issues/151
 	# https://github.com/go-reform/reform/issues/157
 	cat \
-<<<<<<< HEAD
-		internal/test/sql/$(REFORM_DATABASE)_init.sql \
-		internal/test/sql/data.sql \
-		internal/test/sql/$(REFORM_DATABASE)_data.sql \
-		internal/test/sql/$(REFORM_DATABASE)_set.sql \
-		> internal/test/sql/$(REFORM_DATABASE)_combined.tmp.sql
-	reform-db -db-driver="$(REFORM_DRIVER)" -db-source="$(REFORM_INIT_SOURCE)" exec \
-		internal/test/sql/$(REFORM_DATABASE)_combined.tmp.sql
-
-	go test $(REFORM_TEST_FLAGS) -covermode=count -coverprofile=reform-db.cover github.com/mc2soft/reform/reform-db
-	go test $(REFORM_TEST_FLAGS) -covermode=count -coverprofile=reform.cover
-	gocoverutil -coverprofile=coverage.txt merge *.cover
-	rm -f *.cover
-
-test-dc:                        ## Run all integration tests with Docker Compose.
-	go run .github/test-dc.go test
-
-slaves: export REFORM_DRIVER = postgres
-slaves: export REFORM_TEST_SOURCE = postgres://localhost:5432/reform-test?sslmode=disable&TimeZone=America/New_York
-slaves: export REFORM_TEST_SOURCE_SLAVE = postgres://localhost:5432/reform-test-slave?sslmode=disable&TimeZone=America/New_York
-slaves: export REFORM_TEST_SOURCE_MASTER = postgres://localhost:5432/reform-test-master?sslmode=disable&TimeZone=America/New_York
-slaves:
-	-dropdb reform-test
-	createdb reform-test
-	-dropdb reform-test-slave
-	createdb reform-test-slave
-	-dropdb reform-test-master
-	createdb reform-test-master
-	env PGTZ=UTC psql -v ON_ERROR_STOP=1 -q -d reform-test < internal/test/sql/postgres_init.sql
-	env PGTZ=UTC psql -v ON_ERROR_STOP=1 -q -d reform-test < internal/test/sql/data.sql
-	env PGTZ=UTC psql -v ON_ERROR_STOP=1 -q -d reform-test < internal/test/sql/postgres_data.sql
-	env PGTZ=UTC psql -v ON_ERROR_STOP=1 -q -d reform-test < internal/test/sql/postgres_set.sql
-	env PGTZ=UTC psql -v ON_ERROR_STOP=1 -q -d reform-test-slave < internal/test/sql/postgres_init.sql
-	env PGTZ=UTC psql -v ON_ERROR_STOP=1 -q -d reform-test-master < internal/test/sql/postgres_init.sql
-	go test -coverprofile=test_lib_pq.cover
-
-# run unit tests and integration tests for PostgreSQL (postgres driver)
-postgres: export REFORM_DATABASE = postgres
-postgres: export DATABASE = postgres
-postgres: export REFORM_DRIVER = postgres
-postgres: export REFORM_ROOT_SOURCE = postgres://postgres@127.0.0.1/template1?sslmode=disable
-postgres: export REFORM_INIT_SOURCE = postgres://postgres@127.0.0.1/reform-database?sslmode=disable&TimeZone=UTC
-=======
 		test/sql/$(REFORM_TEST_DATABASE)_init.sql \
 		test/sql/data.sql \
 		test/sql/$(REFORM_TEST_DATABASE)_data.sql \
@@ -112,8 +71,8 @@ postgres: export REFORM_INIT_SOURCE = postgres://postgres@127.0.0.1/reform-datab
 	make test-db-init
 
 	# run reform-db tests
-	go test -count=1 -race gopkg.in/reform.v1/reform-db
-	go test -count=1 -covermode=count -coverprofile=$(REFORM_TEST_COVER)_reform-db.cover gopkg.in/reform.v1/reform-db
+	go test -count=1 -race github.com/mc2soft/reform/reform-db
+	go test -count=1 -covermode=count -coverprofile=$(REFORM_TEST_COVER)_reform-db.cover github.com/mc2soft/reform/reform-db
 
 	# run main tests with -race
 	# FIXME skipped for go-mssqldb driver:
@@ -133,7 +92,6 @@ postgres: export REFORM_TEST_DATABASE = postgres
 postgres: export REFORM_TEST_DRIVER = postgres
 postgres: export REFORM_TEST_ADMIN_SOURCE = postgres://postgres@127.0.0.1/template1?sslmode=disable
 postgres: export REFORM_TEST_INIT_SOURCE = postgres://postgres@127.0.0.1/reform-database?sslmode=disable&TimeZone=UTC
->>>>>>> e9fe3e1325c05d40f76d05619c8d231d35a214f8
 postgres: export REFORM_TEST_SOURCE = postgres://postgres@127.0.0.1/reform-database?sslmode=disable&TimeZone=America/New_York
 postgres: export REFORM_TEST_COVER=postgres
 postgres:

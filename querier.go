@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"math/rand"
+	"strings"
 	"time"
 )
 
@@ -15,22 +17,34 @@ type Querier struct {
 	Dialect
 	Logger        Logger
 	inTransaction bool
-	slaves        []DBTX
+	slaves        []DBTXContext
 	onCommitCalls []func() error
 }
 
-func newQuerier(ctx context.Context, dbtxCtx DBTXContext, tag string, dialect Dialect, logger Logger) *Querier {
+func newQuerier(
+	ctx context.Context,
+	dbtxCtx DBTXContext,
+	tag string,
+	dialect Dialect,
+	logger Logger,
+	inTransaction bool,
+	slaves []DBTXContext,
+	onCommitCalls []func() error,
+) *Querier {
 	return &Querier{
-		ctx:     ctx,
-		dbtxCtx: dbtxCtx,
-		tag:     tag,
-		Dialect: dialect,
-		Logger:  logger,
+		ctx:           ctx,
+		dbtxCtx:       dbtxCtx,
+		tag:           tag,
+		Dialect:       dialect,
+		Logger:        logger,
+		inTransaction: inTransaction,
+		slaves:        slaves,
+		onCommitCalls: onCommitCalls,
 	}
 }
 
 func (q *Querier) clone() *Querier {
-	return newQuerier(q.ctx, q.dbtxCtx, q.tag, q.Dialect, q.Logger)
+	return newQuerier(q.ctx, q.dbtxCtx, q.tag, q.Dialect, q.Logger, q.inTransaction, q.slaves, q.onCommitCalls)
 }
 
 func (q *Querier) logBefore(query string, args []interface{}) {
@@ -101,17 +115,14 @@ func (q *Querier) QualifiedColumns(view View) []string {
 	return res
 }
 
-// TODO
-/*
-func (q *Querier) selectDBTX(query string) DBTX {
+func (q *Querier) selectDBTXContext(query string) DBTXContext {
 	if q.inTransaction || len(q.slaves) == 0 || !strings.HasPrefix(strings.TrimSpace(query), "SELECT") {
-		return q.dbtx
+		return q.dbtxCtx
 	}
 
 	ind := rand.Intn(len(q.slaves))
 	return q.slaves[ind]
 }
-*/
 
 // Exec executes a query without returning any rows.
 // The args are for any placeholder parameters in the query.
@@ -119,13 +130,8 @@ func (q *Querier) Exec(query string, args ...interface{}) (sql.Result, error) {
 	q.logBefore(query, args)
 	start := time.Now()
 
-	// TODO
-	/*
-		dbtx := q.selectDBTX(query)
-		res, err := dbtx.Exec(query, args...)
-	*/
-
-	res, err := q.dbtxCtx.ExecContext(q.ctx, query, args...)
+	dbtxCtx := q.selectDBTXContext(query)
+	res, err := dbtxCtx.ExecContext(q.ctx, query, args...)
 	q.logAfter(query, args, time.Since(start), err)
 	return res, err
 }
@@ -141,12 +147,9 @@ func (q *Querier) ExecContext(ctx context.Context, query string, args ...interfa
 func (q *Querier) Query(query string, args ...interface{}) (*sql.Rows, error) {
 	q.logBefore(query, args)
 	start := time.Now()
-	// TODO
-	/*
-		dbtx := q.selectDBTX(query)
-		rows, err := dbtx.Query(query, args...)
-	*/
-	rows, err := q.dbtxCtx.QueryContext(q.ctx, query, args...)
+
+	dbtxCtx := q.selectDBTXContext(query)
+	rows, err := dbtxCtx.QueryContext(q.ctx, query, args...)
 	q.logAfter(query, args, time.Since(start), err)
 	return rows, err
 }
@@ -162,12 +165,9 @@ func (q *Querier) QueryContext(ctx context.Context, query string, args ...interf
 func (q *Querier) QueryRow(query string, args ...interface{}) *sql.Row {
 	q.logBefore(query, args)
 	start := time.Now()
-	// TODO
-	/*
-		dbtx := q.selectDBTX(query)
-		row := dbtx.QueryRow(query, args...)
-	*/
-	row := q.dbtxCtx.QueryRowContext(q.ctx, query, args...)
+
+	dbtxCtx := q.selectDBTXContext(query)
+	row := dbtxCtx.QueryRowContext(q.ctx, query, args...)
 	q.logAfter(query, args, time.Since(start), nil)
 	return row
 }

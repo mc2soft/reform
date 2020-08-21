@@ -232,14 +232,7 @@ func (s *ReformSuite) TestPlaceholders() {
 
 func (s *ReformSuite) TestOnCommitCalls() {
 	person := &Person{ID: 42, Email: pointer.ToString(gofakeit.Email())}
-	s.NoError(insertPersonWithID(s.T(), s.tx.Querier, person))
-
-	err := s.tx.Rollback()
-	s.Require().NoError(err)
-	s.q = nil
-
-	s.Equal(reform.ErrNoRows, DB.Reload(person))
-	err = DB.InTransaction(func(tx *reform.TX) error {
+	err := DB.InTransaction(func(tx *reform.TX) error {
 		s.NoError(insertPersonWithID(s.T(), tx.Querier, person))
 		tx.Querier.AddOnCommitCall(func() error {
 			return errors.New("epic error")
@@ -251,7 +244,6 @@ func (s *ReformSuite) TestOnCommitCalls() {
 	s.Equal(reform.ErrNoRows, DB.Reload(person))
 
 	var testVar1, testVar2 int
-
 	err = DB.InTransaction(func(tx *reform.TX) error {
 		s.NoError(insertPersonWithID(s.T(), tx.Querier, person))
 		tx.Querier.AddOnCommitCall(func() error {
