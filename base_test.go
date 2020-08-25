@@ -17,6 +17,7 @@ import (
 	_ "github.com/lib/pq"
 	_ "github.com/mattn/go-sqlite3"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
@@ -230,22 +231,25 @@ func (s *ReformSuite) TestPlaceholders() {
 	s.Equal([]string{"$2", "$3", "$4", "$5", "$6"}, s.q.Placeholders(2, 5))
 }
 
-func (s *ReformSuite) TestOnCommitCalls() {
+func TestOnCommitCalls(t *testing.T) {
+	db := setupDB(t)
+	defer teardown(t, db)
+
 	person := &Person{ID: 42, Email: pointer.ToString(gofakeit.Email())}
 	err := DB.InTransaction(func(tx *reform.TX) error {
-		s.NoError(insertPersonWithID(s.T(), tx.Querier, person))
+		require.NoError(t, insertPersonWithID(t, tx.Querier, person))
 		tx.Querier.AddOnCommitCall(func() error {
 			return errors.New("epic error")
 		})
 		return nil
 	})
-	s.EqualError(err, "epic error")
-	s.NoError(DB.Delete(person))
-	s.Equal(reform.ErrNoRows, DB.Reload(person))
+	assert.EqualError(t, err, "epic error")
+	require.NoError(t, db.Delete(person))
+	assert.Equal(t, reform.ErrNoRows, db.Reload(person))
 
 	var testVar1, testVar2 int
 	err = DB.InTransaction(func(tx *reform.TX) error {
-		s.NoError(insertPersonWithID(s.T(), tx.Querier, person))
+		require.NoError(t, insertPersonWithID(t, tx.Querier, person))
 		tx.Querier.AddOnCommitCall(func() error {
 			testVar1 = 5
 			return nil
@@ -256,10 +260,11 @@ func (s *ReformSuite) TestOnCommitCalls() {
 		})
 		return nil
 	})
-	s.NoError(err)
-	s.Equal(5, testVar1)
-	s.Equal(10, testVar2)
+	assert.NoError(t, err)
+	assert.Equal(t, 5, testVar1)
+	assert.Equal(t, 10, testVar2)
 
+	require.NoError(t, db.Delete(person))
 }
 
 func (s *ReformSuite) TestTimezones() {
