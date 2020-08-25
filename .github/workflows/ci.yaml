@@ -62,7 +62,7 @@ jobs:
         run: |
           echo "::set-env name=GOPATH::$GITHUB_WORKSPACE/gopath"
           echo "::add-path::$GITHUB_WORKSPACE/gopath/bin"
-          echo "::set-env name=WORKDIR::$GITHUB_WORKSPACE/gopath/src/gopkg.in/reform.v1"
+          echo "::set-env name=WORKDIR::$GITHUB_WORKSPACE/gopath/src/github.com/mc2soft/reform"
           echo "::set-env name=GO_VERSION::$(go version)"
 
       - name: Check out code into GOPATH
@@ -183,7 +183,7 @@ jobs:
         run: |
           echo "::set-env name=GOPATH::$GITHUB_WORKSPACE/gopath"
           echo "::add-path::$GITHUB_WORKSPACE/gopath/bin"
-          echo "::set-env name=WORKDIR::$GITHUB_WORKSPACE/gopath/src/gopkg.in/reform.v1"
+          echo "::set-env name=WORKDIR::$GITHUB_WORKSPACE/gopath/src/github.com/mc2soft/reform"
           echo "::set-env name=GO_VERSION::$(go version)"
 
       - name: Check out code into GOPATH
