@@ -6,6 +6,7 @@ import (
 	"github.com/mc2soft/reform/parse"
 )
 
+// StructData contains struct information for template.
 type StructData struct {
 	Imports map[string]struct{}
 	parse.StructInfo

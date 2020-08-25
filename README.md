@@ -1,13 +1,11 @@
 # reform
 
 [![Release](https://img.shields.io/github/release/go-reform/reform.svg)](https://github.com/go-reform/reform/releases/latest)
-[![GoDoc](https://godoc.org/github.com/mc2soft/reform?status.svg)](https://godoc.org/github.com/mc2soft/reform)
-[![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/go-reform/reform?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
-[![Travis CI Build Status](https://travis-ci.org/go-reform/reform.svg?branch=v1-stable)](https://travis-ci.org/go-reform/reform)
-[![AppVeyor Build status](https://ci.appveyor.com/api/projects/status/kbkyjmic461xa7b3/branch/v1-stable?svg=true)](https://ci.appveyor.com/project/AlekSi/reform/branch/v1-stable)
-[![Coverage Report](https://codecov.io/gh/go-reform/reform/branch/v1-stable/graph/badge.svg)](https://codecov.io/gh/go-reform/reform)
-[![Go Report Card](https://goreportcard.com/badge/github.com/mc2soft/reform)](https://goreportcard.com/report/github.com/mc2soft/reform)
-[![GolangCI](https://golangci.com/badges/github.com/golangci/golangci-lint.svg)](https://golangci.com)
+[![PkgGoDev](https://pkg.go.dev/badge/gopkg.in/reform.v1)](https://pkg.go.dev/gopkg.in/reform.v1)
+[![CI](https://github.com/go-reform/reform/workflows/CI/badge.svg?branch=main&event=push)](https://github.com/go-reform/reform/actions)
+[![AppVeyor Build status](https://ci.appveyor.com/api/projects/status/srwa0cuwf91qpjge/branch/main?svg=true)](https://ci.appveyor.com/project/AlekSi/reform/branch/main)
+[![Coverage Report](https://codecov.io/gh/go-reform/reform/branch/main/graph/badge.svg)](https://codecov.io/gh/go-reform/reform)
+[![Go Report Card](https://goreportcard.com/badge/gopkg.in/reform.v1)](https://goreportcard.com/report/gopkg.in/reform.v1)
 
 <a href="https://en.wikipedia.org/wiki/Peter_the_Great"><img align="right" alt="Reform gopher logo" title="Peter the Reformer" src=".github/reform.png"></a>
 
@@ -21,10 +19,10 @@ Supported SQL dialects:
 | RDBMS                | Library and drivers                                                                                 | Status
 | -----                | -------------------                                                                                 | ------
 | PostgreSQL           | [github.com/lib/pq](https://github.com/lib/pq) (`postgres`)                                         | Stable. Tested with all [supported](https://www.postgresql.org/support/versioning/) versions.
-|                      | [github.com/jackc/pgx/stdlib](https://github.com/jackc/pgx) (`pgx`)                                 | Stable. Tested with all [supported](https://www.postgresql.org/support/versioning/) versions.
+|                      | [github.com/jackc/pgx/stdlib](https://github.com/jackc/pgx) (`pgx` v3)                              | Stable. Tested with all [supported](https://www.postgresql.org/support/versioning/) versions.
 | MySQL                | [github.com/go-sql-driver/mysql](https://github.com/go-sql-driver/mysql) (`mysql`)                  | Stable. Tested with all [supported](https://www.mysql.com/support/supportedplatforms/database.html) versions.
 | SQLite3              | [github.com/mattn/go-sqlite3](https://github.com/mattn/go-sqlite3) (`sqlite3`)                      | Stable.
-| Microsoft SQL Server | [github.com/denisenkom/go-mssqldb](https://github.com/denisenkom/go-mssqldb) (`sqlserver`, `mssql`) | Stable. Tested on Windows with: SQL2008R2SP2, SQL2012SP1, SQL2014, SQL2016. On Linux with: [`microsoft/mssql-server-linux:latest` Docker image](https://hub.docker.com/r/microsoft/mssql-server-linux/).
+| Microsoft SQL Server | [github.com/denisenkom/go-mssqldb](https://github.com/denisenkom/go-mssqldb) (`sqlserver`, `mssql`) | Stable.<br/>Tested on Windows with: SQL2008R2SP2, SQL2012SP1, SQL2014, SQL2016.<br/>On Linux with: [`microsoft/mssql-server-linux:latest` Docker image](https://hub.docker.com/r/microsoft/mssql-server-linux/).
 
 Notes:
 * [`clientFoundRows=true` flag](https://github.com/go-sql-driver/mysql#clientfoundrows) is required for `mysql` driver.
@@ -33,11 +31,28 @@ Notes:
 
 ## Quickstart
 
-1. Make sure you are using Go 1.10+. Install or update `reform` package, `reform` and `reform-db` commands
-   (see about versioning below):
+1. Make sure you are using Go 1.13+, and Go modules support is enabled.
+   Install or update `reform` package, `reform` and `reform-db` commands with:
     ```
-    go get -u github.com/mc2soft/reform/...
+    go get -v gopkg.in/reform.v1/...
     ```
+
+   If you are not using Go modules yet, you can use dep to vendor desired version of reform,
+   and then install commands with:
+    ```
+    go install -v ./vendor/gopkg.in/reform.v1/...
+    ```
+
+   You can also install the latest stable version of reform without using Go modules thanks to
+   [gopkg.in redirection](https://gopkg.in/reform.v1), but please note that this will not use the stable
+   versions of the database drivers:
+    ```
+    env GO111MODULE=off go get -u -v gopkg.in/reform.v1/...
+    ```
+
+   Canonical import path is `gopkg.in/reform.v1`; using `github.com/go-reform/reform` will not work.
+
+   See note about versioning and branches below.
 
 2. Use `reform-db` command to generate models for your existing database schema. For example:
     ```
@@ -70,31 +85,44 @@ Notes:
 5. See [documentation](https://godoc.org/github.com/mc2soft/reform) how to use it. Simple example:
 
     ```go
-	// Use reform.NewDB to create DB.
+	// Get *sql.DB as usual. PostgreSQL example:
+	sqlDB, err := sql.Open("postgres", "postgres://127.0.0.1:5432/database")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer sqlDB.Close()
+
+	// Use new *log.Logger for logging.
+	logger := log.New(os.Stderr, "SQL: ", log.Flags())
+
+	// Create *reform.DB instance with simple logger.
+	// Any Printf-like function (fmt.Printf, log.Printf, testing.T.Logf, etc) can be used with NewPrintfLogger.
+	// Change dialect for other databases.
+	db := reform.NewDB(sqlDB, postgresql.Dialect, reform.NewPrintfLogger(logger.Printf))
 
 	// Save record (performs INSERT or UPDATE).
 	person := &Person{
 		Name:  "Alexey Palazhchenko",
 		Email: pointer.ToString("alexey.palazhchenko@gmail.com"),
 	}
-	if err := DB.Save(person); err != nil {
+	if err := db.Save(person); err != nil {
 		log.Fatal(err)
 	}
 
 	// ID is filled by Save.
-	person2, err := DB.FindByPrimaryKeyFrom(PersonTable, person.ID)
+	person2, err := db.FindByPrimaryKeyFrom(PersonTable, person.ID)
 	if err != nil {
 		log.Fatal(err)
 	}
 	fmt.Println(person2.(*Person).Name)
 
 	// Delete record.
-	if err = DB.Delete(person); err != nil {
+	if err = db.Delete(person); err != nil {
 		log.Fatal(err)
 	}
 
 	// Find records by IDs.
-	persons, err := DB.FindAllFrom(PersonTable, "id", 1, 2)
+	persons, err := db.FindAllFrom(PersonTable, "id", 1, 2)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -128,22 +156,16 @@ First proprietary version of reform was used in production even before `go gener
 This free and open-source version is the fourth milestone on the road to better and idiomatic API.
 
 
-## Versioning policy
+## Versioning and branching policy
 
 We are following [Semantic Versioning](http://semver.org/spec/v2.0.0.html),
 using [gopkg.in](https://gopkg.in) and filling a [changelog](CHANGELOG.md).
+All v1 releases are SemVer-compatible; breaking changes will not be applied.
 
-We use branch `v1-stable` (default on Github) for v1 development and tags `v1.Y.Z` for releases.
-All v1 releases are SemVer-compatible, breaking changes will not be applied.
-Canonical import path is `github.com/mc2soft/reform`.
-`go get -u github.com/mc2soft/reform/...` will install the latest released version.
-To install not yet released v1 version one can do checkout manually while preserving import path:
-```
-cd $GOPATH/src/github.com/mc2soft/reform
-git fetch
-git checkout origin/v1-stable
-go install -v github.com/mc2soft/reform/reform
-```
+We use tags `v1.M.m` for releases, branch `main` (default on GitHub) for the next minor release development,
+and `release/1.M` branches for patch release development. (It was more complicated before 1.4.0 release.)
+
+Major version 2 is currently not planned.
 
 
 ## Additional packages
@@ -161,7 +183,7 @@ go install -v github.com/mc2soft/reform/reform
 
 ## License
 
-Code is covered by standard MIT-style license. Copyright (c) 2016-2018 Alexey Palazhchenko.
+Code is covered by standard MIT-style license. Copyright (c) 2016-2020 Alexey Palazhchenko.
 See [LICENSE](LICENSE) for details. Note that generated code is covered by the terms of your choice.
 
 The reform gopher was drawn by Natalya Glebova. Please use it only as reform logo.

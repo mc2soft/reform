@@ -1,6 +1,7 @@
 package reform
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"math/rand"
@@ -10,21 +11,40 @@ import (
 
 // Querier performs queries and commands.
 type Querier struct {
-	dbtx DBTX
-	tag  string
+	ctx     context.Context
+	dbtxCtx DBTXContext
+	tag     string
 	Dialect
 	Logger        Logger
 	inTransaction bool
-	slaves        []DBTX
+	slaves        []DBTXContext
 	onCommitCalls []func() error
 }
 
-func newQuerier(dbtx DBTX, dialect Dialect, logger Logger) *Querier {
+func newQuerier(
+	ctx context.Context,
+	dbtxCtx DBTXContext,
+	tag string,
+	dialect Dialect,
+	logger Logger,
+	inTransaction bool,
+	slaves []DBTXContext,
+	onCommitCalls []func() error,
+) *Querier {
 	return &Querier{
-		dbtx:    dbtx,
-		Dialect: dialect,
-		Logger:  logger,
+		ctx:           ctx,
+		dbtxCtx:       dbtxCtx,
+		tag:           tag,
+		Dialect:       dialect,
+		Logger:        logger,
+		inTransaction: inTransaction,
+		slaves:        slaves,
+		onCommitCalls: onCommitCalls,
 	}
+}
+
+func (q *Querier) clone() *Querier {
+	return newQuerier(q.ctx, q.dbtxCtx, q.tag, q.Dialect, q.Logger, q.inTransaction, q.slaves, q.onCommitCalls)
 }
 
 func (q *Querier) logBefore(query string, args []interface{}) {
@@ -46,10 +66,15 @@ func (q *Querier) startQuery(command string) string {
 	return command + " /* " + q.tag + " */"
 }
 
+// Tag returns Querier's tag. Default tag is empty.
+func (q *Querier) Tag() string {
+	return q.tag
+}
+
 // WithTag returns a copy of Querier with set tag. Returned Querier is tied to the same DB or TX.
 // See Tagging section in documentation for details.
 func (q *Querier) WithTag(format string, args ...interface{}) *Querier {
-	newQ := newQuerier(q.dbtx, q.Dialect, q.Logger)
+	newQ := q.clone()
 	if len(args) == 0 {
 		newQ.tag = format
 	} else {
@@ -67,6 +92,19 @@ func (q *Querier) QualifiedView(view View) string {
 	return v
 }
 
+// Context returns Querier's context. Default context is context.Background().
+func (q *Querier) Context() context.Context {
+	return q.ctx
+}
+
+// WithContext returns a copy of Querier with set context. Returned Querier is tied to the same DB or TX.
+// See Context section in documentation for details.
+func (q *Querier) WithContext(ctx context.Context) *Querier {
+	newQ := q.clone()
+	newQ.ctx = ctx
+	return newQ
+}
+
 // QualifiedColumns returns a slice of quoted qualified column names for given view.
 func (q *Querier) QualifiedColumns(view View) []string {
 	v := q.QualifiedView(view)
@@ -77,9 +115,9 @@ func (q *Querier) QualifiedColumns(view View) []string {
 	return res
 }
 
-func (q *Querier) selectDBTX(query string) DBTX {
+func (q *Querier) selectDBTXContext(query string) DBTXContext {
 	if q.inTransaction || len(q.slaves) == 0 || !strings.HasPrefix(strings.TrimSpace(query), "SELECT") {
-		return q.dbtx
+		return q.dbtxCtx
 	}
 
 	ind := rand.Intn(len(q.slaves))
@@ -91,10 +129,17 @@ func (q *Querier) selectDBTX(query string) DBTX {
 func (q *Querier) Exec(query string, args ...interface{}) (sql.Result, error) {
 	q.logBefore(query, args)
 	start := time.Now()
-	dbtx := q.selectDBTX(query)
-	res, err := dbtx.Exec(query, args...)
+
+	dbtxCtx := q.selectDBTXContext(query)
+	res, err := dbtxCtx.ExecContext(q.ctx, query, args...)
 	q.logAfter(query, args, time.Since(start), err)
 	return res, err
+}
+
+// ExecContext just calls q.WithContext(ctx).Exec(query, args...), and that form should be used instead.
+// This method exists to satisfy various standard interfaces for advanced use-cases.
+func (q *Querier) ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
+	return q.WithContext(ctx).Exec(query, args...)
 }
 
 // Query executes a query that returns rows, typically a SELECT.
@@ -102,10 +147,17 @@ func (q *Querier) Exec(query string, args ...interface{}) (sql.Result, error) {
 func (q *Querier) Query(query string, args ...interface{}) (*sql.Rows, error) {
 	q.logBefore(query, args)
 	start := time.Now()
-	dbtx := q.selectDBTX(query)
-	rows, err := dbtx.Query(query, args...)
+
+	dbtxCtx := q.selectDBTXContext(query)
+	rows, err := dbtxCtx.QueryContext(q.ctx, query, args...)
 	q.logAfter(query, args, time.Since(start), err)
 	return rows, err
+}
+
+// QueryContext just calls q.WithContext(ctx).Query(query, args...), and that form should be used instead.
+// This method exists to satisfy various standard interfaces for advanced use-cases.
+func (q *Querier) QueryContext(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error) {
+	return q.WithContext(ctx).Query(query, args...)
 }
 
 // QueryRow executes a query that is expected to return at most one row.
@@ -113,8 +165,9 @@ func (q *Querier) Query(query string, args ...interface{}) (*sql.Rows, error) {
 func (q *Querier) QueryRow(query string, args ...interface{}) *sql.Row {
 	q.logBefore(query, args)
 	start := time.Now()
-	dbtx := q.selectDBTX(query)
-	row := dbtx.QueryRow(query, args...)
+
+	dbtxCtx := q.selectDBTXContext(query)
+	row := dbtxCtx.QueryRowContext(q.ctx, query, args...)
 	q.logAfter(query, args, time.Since(start), nil)
 	return row
 }
@@ -131,5 +184,14 @@ func (q *Querier) AddOnCommitCall(f func() error) {
 	q.onCommitCalls = append(q.onCommitCalls, f)
 }
 
-// check interface
-var _ DBTX = (*Querier)(nil)
+// QueryRowContext just calls q.WithContext(ctx).QueryRow(query, args...), and that form should be used instead.
+// This method exists to satisfy various standard interfaces for advanced use-cases.
+func (q *Querier) QueryRowContext(ctx context.Context, query string, args ...interface{}) *sql.Row {
+	return q.WithContext(ctx).QueryRow(query, args...)
+}
+
+// check interfaces
+var (
+	_ DBTX        = (*Querier)(nil)
+	_ DBTXContext = (*Querier)(nil)
+)

@@ -1,14 +1,23 @@
 package reform
 
 import (
+	"context"
 	"database/sql"
 	"time"
 )
 
 // DBInterface is a subset of *sql.DB used by reform.
 // Can be used together with NewDBFromInterface for easier integration with existing code or for passing test doubles.
+//
+// It may grow and shrink over time to include only needed *sql.DB methods,
+// and is excluded from SemVer compatibility guarantees.
 type DBInterface interface {
+	DBTXContext
+	BeginTx(ctx context.Context, opts *sql.TxOptions) (*sql.Tx, error)
+
+	// Deprecated: do not use, it will be removed in v1.5.
 	DBTX
+	// Deprecated: do not use, it will be removed in v1.5.
 	Begin() (*sql.Tx, error)
 }
 
@@ -32,7 +41,7 @@ func NewDB(db *sql.DB, dialect Dialect, logger Logger) *DB {
 // Logger can be nil.
 func NewDBFromInterface(db DBInterface, dialect Dialect, logger Logger) *DB {
 	return &DB{
-		Querier: newQuerier(db, dialect, logger),
+		Querier: newQuerier(context.Background(), db, "", dialect, logger, false, nil, nil),
 		db:      db,
 	}
 }
@@ -45,26 +54,37 @@ func (db *DB) DBInterface() DBInterface {
 // AddSlaves adds slave *sql.DB connections.
 func (db *DB) AddSlaves(slaves ...*sql.DB) {
 	for _, s := range slaves {
-		db.slaves = append(db.slaves, newQuerier(s, db.Dialect, db.Logger))
+		db.slaves = append(db.slaves, newQuerier(context.Background(), s, "", db.Dialect, db.Logger, false, nil, nil))
 	}
 }
 
-// Begin starts a transaction.
+// Begin starts transaction with Querier's context and default options.
 func (db *DB) Begin() (*TX, error) {
+	return db.BeginTx(db.Querier.ctx, nil)
+}
+
+// BeginTx starts transaction with given context and options (can be nil).
+func (db *DB) BeginTx(ctx context.Context, opts *sql.TxOptions) (*TX, error) {
 	db.logBefore("BEGIN", nil)
 	start := time.Now()
-	tx, err := db.db.Begin()
+	tx, err := db.db.BeginTx(ctx, opts)
 	db.logAfter("BEGIN", nil, time.Since(start), err)
 	if err != nil {
 		return nil, err
 	}
-	return NewTX(tx, db.Dialect, db.Logger), nil
+	return newTX(ctx, tx, db.Dialect, db.Logger), nil
 }
 
-// InTransaction wraps function execution in transaction, rolling back it in case of error or panic,
-// committing otherwise.
+// InTransaction wraps function execution in transaction with Querier's context and default options,
+// rolling back it in case of error or panic, committing otherwise.
 func (db *DB) InTransaction(f func(t *TX) error) error {
-	tx, err := db.Begin()
+	return db.InTransactionContext(db.Querier.ctx, nil, f)
+}
+
+// InTransactionContext wraps function execution in transaction with given context and options (can be nil),
+// rolling back it in case of error or panic, committing otherwise.
+func (db *DB) InTransactionContext(ctx context.Context, opts *sql.TxOptions, f func(t *TX) error) error {
+	tx, err := db.BeginTx(ctx, opts)
 	if err != nil {
 		return err
 	}
@@ -84,9 +104,8 @@ func (db *DB) InTransaction(f func(t *TX) error) error {
 	if err == nil {
 		committed = true
 		for _, call := range tx.Querier.onCommitCalls {
-			err := call()
-			if err != nil {
-				return err
+			if e := call(); e != nil {
+				return e
 			}
 		}
 	}
@@ -95,8 +114,16 @@ func (db *DB) InTransaction(f func(t *TX) error) error {
 
 // MasterQuerier returns Querier that uses only master connection.
 func (db *DB) MasterQuerier() *Querier {
-	return newQuerier(db.db, db.Dialect, db.Logger)
+	q := db.clone()
+	q.inTransaction = false
+	q.slaves = nil
+	q.onCommitCalls = nil
+
+	return q
 }
 
-// check interface
-var _ DBTX = (*DB)(nil)
+// check interfaces
+var (
+	_ DBTX        = (*DB)(nil)
+	_ DBTXContext = (*DB)(nil)
+)

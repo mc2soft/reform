@@ -1,6 +1,7 @@
 package reform_test
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"log"
@@ -58,10 +59,11 @@ func Example() {
 
 func ExampleNewDB() {
 	// Get *sql.DB as usual. PostgreSQL example:
-	conn, err := sql.Open("postgres", "postgres://127.0.0.1:5432/database")
+	sqlDB, err := sql.Open("postgres", "postgres://127.0.0.1:5432/database")
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer sqlDB.Close()
 
 	// Use new *log.Logger for logging.
 	logger := log.New(os.Stderr, "SQL: ", log.Flags())
@@ -69,18 +71,18 @@ func ExampleNewDB() {
 	// Create *reform.DB instance with simple logger.
 	// Any Printf-like function (fmt.Printf, log.Printf, testing.T.Logf, etc) can be used with NewPrintfLogger.
 	// Change dialect for other databases.
-	_ = reform.NewDB(conn, postgresql.Dialect, reform.NewPrintfLogger(logger.Printf))
+	_ = reform.NewDB(sqlDB, postgresql.Dialect, reform.NewPrintfLogger(logger.Printf))
 }
 
 func ExampleQuerier_WithTag() {
 	id := "baron"
-	person, err := DB.WithTag("GetProject:%v", id).FindByPrimaryKeyFrom(ProjectTable, id)
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Println(person)
-	// Output:
-	// Name: `Vicious Baron` (string), ID: `baron` (string), Start: 2014-06-01 00:00:00 +0000 UTC (time.Time), End: 2016-02-21 00:00:00 +0000 UTC (*time.Time)
+	_, _ = DB.WithTag("GetProject:%v", id).FindByPrimaryKeyFrom(ProjectTable, id)
+}
+
+func ExampleQuerier_WithContext() {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	_, _ = DB.WithContext(ctx).SelectAllFrom(ProjectTable, "")
 }
 
 func ExampleQuerier_SelectRows() {
