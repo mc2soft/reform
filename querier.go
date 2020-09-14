@@ -181,8 +181,8 @@ func (q *Querier) AddOnCommitCall(f func() error) {
 	q.onCommitCalls = append(q.onCommitCalls, f)
 }
 
-// SlaveQuerier возвращает Querier в мастер БД или в первую реплику.
-func (q *Querier) SlaveQuerier() *Querier {
+// QuerierForRead возвращает Querier в мастер БД или в первую реплику.
+func (q *Querier) QuerierForRead() *Querier {
 	if q.inTransaction || len(q.slaves) == 0 {
 		return q
 	}
@@ -195,6 +195,7 @@ func (q *Querier) selectDBTXContext(query string) DBTXContext {
 		return q.dbtxCtx
 	}
 
+	//nolint:gosec
 	ind := rand.Intn(len(q.slaves))
 	return q.slaves[ind]
 }
