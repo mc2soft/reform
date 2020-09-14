@@ -115,15 +115,6 @@ func (q *Querier) QualifiedColumns(view View) []string {
 	return res
 }
 
-func (q *Querier) selectDBTXContext(query string) DBTXContext {
-	if q.inTransaction || len(q.slaves) == 0 || !strings.HasPrefix(strings.TrimSpace(query), "SELECT") {
-		return q.dbtxCtx
-	}
-
-	ind := rand.Intn(len(q.slaves))
-	return q.slaves[ind]
-}
-
 // Exec executes a query without returning any rows.
 // The args are for any placeholder parameters in the query.
 func (q *Querier) Exec(query string, args ...interface{}) (sql.Result, error) {
@@ -172,6 +163,12 @@ func (q *Querier) QueryRow(query string, args ...interface{}) *sql.Row {
 	return row
 }
 
+// QueryRowContext just calls q.WithContext(ctx).QueryRow(query, args...), and that form should be used instead.
+// This method exists to satisfy various standard interfaces for advanced use-cases.
+func (q *Querier) QueryRowContext(ctx context.Context, query string, args ...interface{}) *sql.Row {
+	return q.WithContext(ctx).QueryRow(query, args...)
+}
+
 func (q *Querier) IsInTransaction() bool {
 	return q.inTransaction
 }
@@ -184,10 +181,23 @@ func (q *Querier) AddOnCommitCall(f func() error) {
 	q.onCommitCalls = append(q.onCommitCalls, f)
 }
 
-// QueryRowContext just calls q.WithContext(ctx).QueryRow(query, args...), and that form should be used instead.
-// This method exists to satisfy various standard interfaces for advanced use-cases.
-func (q *Querier) QueryRowContext(ctx context.Context, query string, args ...interface{}) *sql.Row {
-	return q.WithContext(ctx).QueryRow(query, args...)
+// QuerierForRead возвращает Querier в мастер БД или в первую реплику.
+func (q *Querier) QuerierForRead() *Querier {
+	if q.inTransaction || len(q.slaves) == 0 {
+		return q
+	}
+
+	return newQuerier(q.ctx, q.slaves[0], q.tag, q.Dialect, q.Logger, false, nil, nil)
+}
+
+func (q *Querier) selectDBTXContext(query string) DBTXContext {
+	if q.inTransaction || len(q.slaves) == 0 || !strings.HasPrefix(strings.TrimSpace(query), "SELECT") {
+		return q.dbtxCtx
+	}
+
+	//nolint:gosec
+	ind := rand.Intn(len(q.slaves))
+	return q.slaves[ind]
 }
 
 // check interfaces
