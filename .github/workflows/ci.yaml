@@ -59,11 +59,7 @@ jobs:
 
       - name: Set up Go version ${{ matrix.go-version }}
         if: matrix.go-version != 'tip'
-<<<<<<< HEAD
-        uses: actions/setup-go@v2.1.2
-=======
         uses: actions/setup-go@v2
->>>>>>> reform_upstream/main
         with:
           go-version: ${{ matrix.go-version }}
 
@@ -77,17 +73,8 @@ jobs:
           echo "$HOME/gotip/bin" >> $GITHUB_PATH
           echo "$GOBIN" >> $GITHUB_PATH
 
-<<<<<<< HEAD
-      - name: Set environment variables
-        run: |
-          echo "::set-env name=GOPATH::$GITHUB_WORKSPACE/gopath"
-          echo "::add-path::$GITHUB_WORKSPACE/gopath/bin"
-          echo "::set-env name=WORKDIR::$GITHUB_WORKSPACE/gopath/src/github.com/mc2soft/reform"
-          echo "::set-env name=GO_VERSION::$(go version)"
-=======
       - name: Set GO_VERSION
         run: echo "GO_VERSION=$(go version)" >> $GITHUB_ENV
->>>>>>> reform_upstream/main
 
       - name: Check out code into GOPATH
         uses: actions/checkout@v2
@@ -199,24 +186,14 @@ jobs:
           key: ${{ matrix.os }}-${{ matrix.go-version }}
 
       - name: Set up Go version ${{ matrix.go-version }}
-<<<<<<< HEAD
-        uses: actions/setup-go@v2.1.2
-=======
         if: matrix.go-version != 'tip'
         uses: actions/setup-go@v2
->>>>>>> reform_upstream/main
         with:
           go-version: ${{ matrix.go-version }}
 
       - name: Set up Go tip
         if: matrix.go-version == 'tip'
         run: |
-<<<<<<< HEAD
-          echo "::set-env name=GOPATH::$GITHUB_WORKSPACE/gopath"
-          echo "::add-path::$GITHUB_WORKSPACE/gopath/bin"
-          echo "::set-env name=WORKDIR::$GITHUB_WORKSPACE/gopath/src/github.com/mc2soft/reform"
-          echo "::set-env name=GO_VERSION::$(go version)"
-=======
           git clone --depth=1 https://go.googlesource.com/go $HOME/gotip
           cd $HOME/gotip/src
           ./make.bash
@@ -226,7 +203,6 @@ jobs:
 
       - name: Set GO_VERSION
         run: echo "GO_VERSION=$(go version)" >> $GITHUB_ENV
->>>>>>> reform_upstream/main
 
       - name: Check out code into GOPATH
         uses: actions/checkout@v2
