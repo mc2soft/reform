@@ -3,6 +3,7 @@ package reform_test
 import (
 	"database/sql"
 	"errors"
+	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -26,18 +27,26 @@ import (
 	"github.com/mc2soft/reform/dialects/postgresql"
 	"github.com/mc2soft/reform/dialects/sqlite3"
 	"github.com/mc2soft/reform/dialects/sqlserver"
-	"github.com/mc2soft/reform/internal"
+	"github.com/mc2soft/reform/internal/test"
 	. "github.com/mc2soft/reform/internal/test/models"
 )
 
 var (
 	// DB is a global connection pool shared by tests and examples.
+	//
 	// Deprecated: do not add new tests using it as using a global pool makes tests more brittle.
 	DB *reform.DB
 )
 
 func TestMain(m *testing.M) {
-	DB = internal.ConnectToTestDB()
+	flag.Parse()
+
+	if testing.Short() {
+		log.Print("Not setting DB in short mode")
+	} else {
+		DB = test.ConnectToTestDB()
+	}
+
 	os.Exit(m.Run())
 }
 
@@ -91,7 +100,7 @@ func setupDB(t testing.TB) *reform.DB {
 		t.Skip("skipping in short mode")
 	}
 
-	db := internal.ConnectToTestDB()
+	db := test.ConnectToTestDB()
 	pl := reform.NewPrintfLogger(t.Logf)
 	pl.LogTypes = true
 	db.Logger = pl
@@ -308,11 +317,8 @@ func (s *ReformSuite) TestTimezones() {
 		q := fmt.Sprintf(`INSERT INTO projects (id, name, start) VALUES `+
 			`('11', '11', %s), ('12', '12', %s), ('13', '13', %s), ('14', '14', %s)`,
 			s.q.Placeholder(1), s.q.Placeholder(2), s.q.Placeholder(3), s.q.Placeholder(4))
-
-		withIdentityInsert(s.T(), s.q, "people", func() {
-			_, err := s.q.Exec(q, t1, t2, tVLAT, tHST)
-			s.NoError(err)
-		})
+		_, err := s.q.Exec(q, t1, t2, tVLAT, tHST)
+		s.NoError(err)
 
 		q = `SELECT start, start FROM projects WHERE id IN ('11', '12', '13', '14') ORDER BY id`
 		rows, err := s.q.Query(q)
@@ -344,4 +350,31 @@ func (s *ReformSuite) TestColumns() {
 	s.NoError(err)
 	s.Equal(PersonTable.Columns(), columns)
 	s.NoError(rows.Close())
+}
+
+//nolint:staticcheck
+func TestSetPK(t *testing.T) {
+	t.Parallel()
+
+	var person Person
+	person.SetPK(int32(1))
+	assert.EqualValues(t, 1, person.ID)
+	person.SetPK(int64(2))
+	assert.EqualValues(t, 2, person.ID)
+	person.SetPK(Integer(3))
+	assert.EqualValues(t, 3, person.ID)
+
+	var project Project
+	project.SetPK("baron")
+	assert.EqualValues(t, "baron", project.ID)
+	project.SetPK(1)
+	assert.EqualValues(t, "baron", project.ID)
+
+	var extra Extra
+	extra.SetPK(int32(1))
+	assert.EqualValues(t, 1, extra.ID)
+	extra.SetPK(int64(2))
+	assert.EqualValues(t, 2, extra.ID)
+	extra.SetPK(Integer(3))
+	assert.EqualValues(t, 3, extra.ID)
 }

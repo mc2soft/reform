@@ -7,6 +7,7 @@ import (
 
 	"github.com/mc2soft/reform"
 	"github.com/mc2soft/reform/internal"
+	"github.com/mc2soft/reform/internal/test"
 )
 
 type ReformDBSuite struct {
@@ -19,9 +20,13 @@ func TestReformDBSuite(t *testing.T) {
 }
 
 func (s *ReformDBSuite) SetupSuite() {
+	if testing.Short() {
+		s.T().Skip("skipping in short mode")
+	}
+
 	logger = internal.NewLogger("reform-db-test: ", true)
 
-	s.db = internal.ConnectToTestDB()
+	s.db = test.ConnectToTestDB()
 	s.db.Querier = s.db.WithTag("reform-db-test")
 }
 

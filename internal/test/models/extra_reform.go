@@ -27,7 +27,20 @@ func (v *extraTableType) Name() string {
 
 // Columns returns a new slice of column names for that view or table in SQL database.
 func (v *extraTableType) Columns() []string {
-	return []string{"id", "name", "byte", "uint8", "bytep", "uint8p", "bytes", "uint8s", "bytesa", "uint8sa", "bytest", "uint8st"}
+	return []string{
+		"id",
+		"name",
+		"byte",
+		"uint8",
+		"bytep",
+		"uint8p",
+		"bytes",
+		"uint8s",
+		"bytesa",
+		"uint8sa",
+		"bytest",
+		"uint8st",
+	}
 }
 
 // NewStruct makes a new struct for that view or table.
@@ -47,7 +60,25 @@ func (v *extraTableType) PKColumnIndex() uint {
 
 // ExtraTable represents extra view or table in SQL database.
 var ExtraTable = &extraTableType{
-	s: parse.StructInfo{Type: "Extra", SQLSchema: "", SQLName: "extra", Fields: []parse.FieldInfo{{Name: "ID", Type: "Integer", Column: "id"}, {Name: "Name", Type: "*String", Column: "name"}, {Name: "Byte", Type: "uint8", Column: "byte"}, {Name: "Uint8", Type: "uint8", Column: "uint8"}, {Name: "ByteP", Type: "*uint8", Column: "bytep"}, {Name: "Uint8P", Type: "*uint8", Column: "uint8p"}, {Name: "Bytes", Type: "[]uint8", Column: "bytes"}, {Name: "Uint8s", Type: "[]uint8", Column: "uint8s"}, {Name: "BytesA", Type: "[512]uint8", Column: "bytesa"}, {Name: "Uint8sA", Type: "[512]uint8", Column: "uint8sa"}, {Name: "BytesT", Type: "Bytes", Column: "bytest"}, {Name: "Uint8sT", Type: "Uint8s", Column: "uint8st"}}, PKFieldIndex: 0},
+	s: parse.StructInfo{
+		Type:    "Extra",
+		SQLName: "extra",
+		Fields: []parse.FieldInfo{
+			{Name: "ID", Type: "Integer", Column: "id"},
+			{Name: "Name", Type: "*String", Column: "name"},
+			{Name: "Byte", Type: "uint8", Column: "byte"},
+			{Name: "Uint8", Type: "uint8", Column: "uint8"},
+			{Name: "ByteP", Type: "*uint8", Column: "bytep"},
+			{Name: "Uint8P", Type: "*uint8", Column: "uint8p"},
+			{Name: "Bytes", Type: "[]uint8", Column: "bytes"},
+			{Name: "Uint8s", Type: "[]uint8", Column: "uint8s"},
+			{Name: "BytesA", Type: "[512]uint8", Column: "bytesa"},
+			{Name: "Uint8sA", Type: "[512]uint8", Column: "uint8sa"},
+			{Name: "BytesT", Type: "Bytes", Column: "bytest"},
+			{Name: "Uint8sT", Type: "Uint8s", Column: "uint8st"},
+		},
+		PKFieldIndex: 0,
+	},
 	z: new(Extra).Values(),
 }
 
@@ -134,13 +165,11 @@ func (s *Extra) HasPK() bool {
 	return s.ID != ExtraTable.z[ExtraTable.s.PKFieldIndex]
 }
 
-// SetPK sets record primary key.
+// SetPK sets record primary key, if possible.
+//
+// Deprecated: prefer direct field assignment where possible: s.ID = pk.
 func (s *Extra) SetPK(pk interface{}) {
-	if i64, ok := pk.(int64); ok {
-		s.ID = Integer(i64)
-	} else {
-		s.ID = pk.(Integer)
-	}
+	reform.SetPK(s, pk)
 }
 
 // check interfaces
@@ -169,7 +198,9 @@ func (v *notExportedTableType) Name() string {
 
 // Columns returns a new slice of column names for that view or table in SQL database.
 func (v *notExportedTableType) Columns() []string {
-	return []string{"id"}
+	return []string{
+		"id",
+	}
 }
 
 // NewStruct makes a new struct for that view or table.
@@ -189,7 +220,14 @@ func (v *notExportedTableType) PKColumnIndex() uint {
 
 // notExportedTable represents not_exported view or table in SQL database.
 var notExportedTable = &notExportedTableType{
-	s: parse.StructInfo{Type: "notExported", SQLSchema: "", SQLName: "not_exported", Fields: []parse.FieldInfo{{Name: "ID", Type: "string", Column: "id"}}, PKFieldIndex: 0},
+	s: parse.StructInfo{
+		Type:    "notExported",
+		SQLName: "not_exported",
+		Fields: []parse.FieldInfo{
+			{Name: "ID", Type: "string", Column: "id"},
+		},
+		PKFieldIndex: 0,
+	},
 	z: new(notExported).Values(),
 }
 
@@ -243,13 +281,11 @@ func (s *notExported) HasPK() bool {
 	return s.ID != notExportedTable.z[notExportedTable.s.PKFieldIndex]
 }
 
-// SetPK sets record primary key.
+// SetPK sets record primary key, if possible.
+//
+// Deprecated: prefer direct field assignment where possible: s.ID = pk.
 func (s *notExported) SetPK(pk interface{}) {
-	if i64, ok := pk.(int64); ok {
-		s.ID = string(i64)
-	} else {
-		s.ID = pk.(string)
-	}
+	reform.SetPK(s, pk)
 }
 
 // check interfaces
