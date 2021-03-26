@@ -27,7 +27,14 @@ func (v *personTableType) Name() string {
 
 // Columns returns a new slice of column names for that view or table in SQL database.
 func (v *personTableType) Columns() []string {
-	return []string{"id", "group_id", "name", "email", "created_at", "updated_at"}
+	return []string{
+		"id",
+		"group_id",
+		"name",
+		"email",
+		"created_at",
+		"updated_at",
+	}
 }
 
 // NewStruct makes a new struct for that view or table.
@@ -47,7 +54,19 @@ func (v *personTableType) PKColumnIndex() uint {
 
 // PersonTable represents people view or table in SQL database.
 var PersonTable = &personTableType{
-	s: parse.StructInfo{Type: "Person", SQLSchema: "", SQLName: "people", Fields: []parse.FieldInfo{{Name: "ID", Type: "int32", Column: "id"}, {Name: "GroupID", Type: "*int32", Column: "group_id"}, {Name: "Name", Type: "string", Column: "name"}, {Name: "Email", Type: "*string", Column: "email"}, {Name: "CreatedAt", Type: "time.Time", Column: "created_at"}, {Name: "UpdatedAt", Type: "*time.Time", Column: "updated_at"}}, PKFieldIndex: 0},
+	s: parse.StructInfo{
+		Type:    "Person",
+		SQLName: "people",
+		Fields: []parse.FieldInfo{
+			{Name: "ID", Type: "int32", Column: "id"},
+			{Name: "GroupID", Type: "*int32", Column: "group_id"},
+			{Name: "Name", Type: "string", Column: "name"},
+			{Name: "Email", Type: "*string", Column: "email"},
+			{Name: "CreatedAt", Type: "time.Time", Column: "created_at"},
+			{Name: "UpdatedAt", Type: "*time.Time", Column: "updated_at"},
+		},
+		PKFieldIndex: 0,
+	},
 	z: new(Person).Values(),
 }
 
@@ -116,13 +135,11 @@ func (s *Person) HasPK() bool {
 	return s.ID != PersonTable.z[PersonTable.s.PKFieldIndex]
 }
 
-// SetPK sets record primary key.
+// SetPK sets record primary key, if possible.
+//
+// Deprecated: prefer direct field assignment where possible: s.ID = pk.
 func (s *Person) SetPK(pk interface{}) {
-	if i64, ok := pk.(int64); ok {
-		s.ID = int32(i64)
-	} else {
-		s.ID = pk.(int32)
-	}
+	reform.SetPK(s, pk)
 }
 
 // check interfaces
@@ -151,7 +168,12 @@ func (v *projectTableType) Name() string {
 
 // Columns returns a new slice of column names for that view or table in SQL database.
 func (v *projectTableType) Columns() []string {
-	return []string{"name", "id", "start", "end"}
+	return []string{
+		"name",
+		"id",
+		"start",
+		"end",
+	}
 }
 
 // NewStruct makes a new struct for that view or table.
@@ -171,7 +193,17 @@ func (v *projectTableType) PKColumnIndex() uint {
 
 // ProjectTable represents projects view or table in SQL database.
 var ProjectTable = &projectTableType{
-	s: parse.StructInfo{Type: "Project", SQLSchema: "", SQLName: "projects", Fields: []parse.FieldInfo{{Name: "Name", Type: "string", Column: "name"}, {Name: "ID", Type: "string", Column: "id"}, {Name: "Start", Type: "time.Time", Column: "start"}, {Name: "End", Type: "*time.Time", Column: "end"}}, PKFieldIndex: 1},
+	s: parse.StructInfo{
+		Type:    "Project",
+		SQLName: "projects",
+		Fields: []parse.FieldInfo{
+			{Name: "Name", Type: "string", Column: "name"},
+			{Name: "ID", Type: "string", Column: "id"},
+			{Name: "Start", Type: "time.Time", Column: "start"},
+			{Name: "End", Type: "*time.Time", Column: "end"},
+		},
+		PKFieldIndex: 1,
+	},
 	z: new(Project).Values(),
 }
 
@@ -234,13 +266,11 @@ func (s *Project) HasPK() bool {
 	return s.ID != ProjectTable.z[ProjectTable.s.PKFieldIndex]
 }
 
-// SetPK sets record primary key.
+// SetPK sets record primary key, if possible.
+//
+// Deprecated: prefer direct field assignment where possible: s.ID = pk.
 func (s *Project) SetPK(pk interface{}) {
-	if i64, ok := pk.(int64); ok {
-		s.ID = string(i64)
-	} else {
-		s.ID = pk.(string)
-	}
+	reform.SetPK(s, pk)
 }
 
 // check interfaces
@@ -269,7 +299,10 @@ func (v *personProjectViewType) Name() string {
 
 // Columns returns a new slice of column names for that view or table in SQL database.
 func (v *personProjectViewType) Columns() []string {
-	return []string{"person_id", "project_id"}
+	return []string{
+		"person_id",
+		"project_id",
+	}
 }
 
 // NewStruct makes a new struct for that view or table.
@@ -279,7 +312,15 @@ func (v *personProjectViewType) NewStruct() reform.Struct {
 
 // PersonProjectView represents person_project view or table in SQL database.
 var PersonProjectView = &personProjectViewType{
-	s: parse.StructInfo{Type: "PersonProject", SQLSchema: "", SQLName: "person_project", Fields: []parse.FieldInfo{{Name: "PersonID", Type: "int32", Column: "person_id"}, {Name: "ProjectID", Type: "string", Column: "project_id"}}, PKFieldIndex: -1},
+	s: parse.StructInfo{
+		Type:    "PersonProject",
+		SQLName: "person_project",
+		Fields: []parse.FieldInfo{
+			{Name: "PersonID", Type: "int32", Column: "person_id"},
+			{Name: "ProjectID", Type: "string", Column: "project_id"},
+		},
+		PKFieldIndex: -1,
+	},
 	z: new(PersonProject).Values(),
 }
 
@@ -321,6 +362,243 @@ var (
 	_ fmt.Stringer  = (*PersonProject)(nil)
 )
 
+type iDOnlyTableType struct {
+	s parse.StructInfo
+	z []interface{}
+}
+
+// Schema returns a schema name in SQL database ("").
+func (v *iDOnlyTableType) Schema() string {
+	return v.s.SQLSchema
+}
+
+// Name returns a view or table name in SQL database ("id_only").
+func (v *iDOnlyTableType) Name() string {
+	return v.s.SQLName
+}
+
+// Columns returns a new slice of column names for that view or table in SQL database.
+func (v *iDOnlyTableType) Columns() []string {
+	return []string{
+		"id",
+	}
+}
+
+// NewStruct makes a new struct for that view or table.
+func (v *iDOnlyTableType) NewStruct() reform.Struct {
+	return new(IDOnly)
+}
+
+// NewRecord makes a new record for that table.
+func (v *iDOnlyTableType) NewRecord() reform.Record {
+	return new(IDOnly)
+}
+
+// PKColumnIndex returns an index of primary key column for that table in SQL database.
+func (v *iDOnlyTableType) PKColumnIndex() uint {
+	return uint(v.s.PKFieldIndex)
+}
+
+// IDOnlyTable represents id_only view or table in SQL database.
+var IDOnlyTable = &iDOnlyTableType{
+	s: parse.StructInfo{
+		Type:    "IDOnly",
+		SQLName: "id_only",
+		Fields: []parse.FieldInfo{
+			{Name: "ID", Type: "int32", Column: "id"},
+		},
+		PKFieldIndex: 0,
+	},
+	z: new(IDOnly).Values(),
+}
+
+// String returns a string representation of this struct or record.
+func (s IDOnly) String() string {
+	res := make([]string, 1)
+	res[0] = "ID: " + reform.Inspect(s.ID, true)
+	return strings.Join(res, ", ")
+}
+
+// Values returns a slice of struct or record field values.
+// Returned interface{} values are never untyped nils.
+func (s *IDOnly) Values() []interface{} {
+	return []interface{}{
+		s.ID,
+	}
+}
+
+// Pointers returns a slice of pointers to struct or record fields.
+// Returned interface{} values are never untyped nils.
+func (s *IDOnly) Pointers() []interface{} {
+	return []interface{}{
+		&s.ID,
+	}
+}
+
+// View returns View object for that struct.
+func (s *IDOnly) View() reform.View {
+	return IDOnlyTable
+}
+
+// Table returns Table object for that record.
+func (s *IDOnly) Table() reform.Table {
+	return IDOnlyTable
+}
+
+// PKValue returns a value of primary key for that record.
+// Returned interface{} value is never untyped nil.
+func (s *IDOnly) PKValue() interface{} {
+	return s.ID
+}
+
+// PKPointer returns a pointer to primary key field for that record.
+// Returned interface{} value is never untyped nil.
+func (s *IDOnly) PKPointer() interface{} {
+	return &s.ID
+}
+
+// HasPK returns true if record has non-zero primary key set, false otherwise.
+func (s *IDOnly) HasPK() bool {
+	return s.ID != IDOnlyTable.z[IDOnlyTable.s.PKFieldIndex]
+}
+
+// SetPK sets record primary key, if possible.
+//
+// Deprecated: prefer direct field assignment where possible: s.ID = pk.
+func (s *IDOnly) SetPK(pk interface{}) {
+	reform.SetPK(s, pk)
+}
+
+// check interfaces
+var (
+	_ reform.View   = IDOnlyTable
+	_ reform.Struct = (*IDOnly)(nil)
+	_ reform.Table  = IDOnlyTable
+	_ reform.Record = (*IDOnly)(nil)
+	_ fmt.Stringer  = (*IDOnly)(nil)
+)
+
+type constraintsTableType struct {
+	s parse.StructInfo
+	z []interface{}
+}
+
+// Schema returns a schema name in SQL database ("").
+func (v *constraintsTableType) Schema() string {
+	return v.s.SQLSchema
+}
+
+// Name returns a view or table name in SQL database ("constraints").
+func (v *constraintsTableType) Name() string {
+	return v.s.SQLName
+}
+
+// Columns returns a new slice of column names for that view or table in SQL database.
+func (v *constraintsTableType) Columns() []string {
+	return []string{
+		"i",
+		"id",
+	}
+}
+
+// NewStruct makes a new struct for that view or table.
+func (v *constraintsTableType) NewStruct() reform.Struct {
+	return new(Constraints)
+}
+
+// NewRecord makes a new record for that table.
+func (v *constraintsTableType) NewRecord() reform.Record {
+	return new(Constraints)
+}
+
+// PKColumnIndex returns an index of primary key column for that table in SQL database.
+func (v *constraintsTableType) PKColumnIndex() uint {
+	return uint(v.s.PKFieldIndex)
+}
+
+// ConstraintsTable represents constraints view or table in SQL database.
+var ConstraintsTable = &constraintsTableType{
+	s: parse.StructInfo{
+		Type:    "Constraints",
+		SQLName: "constraints",
+		Fields: []parse.FieldInfo{
+			{Name: "I", Type: "int32", Column: "i"},
+			{Name: "ID", Type: "string", Column: "id"},
+		},
+		PKFieldIndex: 1,
+	},
+	z: new(Constraints).Values(),
+}
+
+// String returns a string representation of this struct or record.
+func (s Constraints) String() string {
+	res := make([]string, 2)
+	res[0] = "I: " + reform.Inspect(s.I, true)
+	res[1] = "ID: " + reform.Inspect(s.ID, true)
+	return strings.Join(res, ", ")
+}
+
+// Values returns a slice of struct or record field values.
+// Returned interface{} values are never untyped nils.
+func (s *Constraints) Values() []interface{} {
+	return []interface{}{
+		s.I,
+		s.ID,
+	}
+}
+
+// Pointers returns a slice of pointers to struct or record fields.
+// Returned interface{} values are never untyped nils.
+func (s *Constraints) Pointers() []interface{} {
+	return []interface{}{
+		&s.I,
+		&s.ID,
+	}
+}
+
+// View returns View object for that struct.
+func (s *Constraints) View() reform.View {
+	return ConstraintsTable
+}
+
+// Table returns Table object for that record.
+func (s *Constraints) Table() reform.Table {
+	return ConstraintsTable
+}
+
+// PKValue returns a value of primary key for that record.
+// Returned interface{} value is never untyped nil.
+func (s *Constraints) PKValue() interface{} {
+	return s.ID
+}
+
+// PKPointer returns a pointer to primary key field for that record.
+// Returned interface{} value is never untyped nil.
+func (s *Constraints) PKPointer() interface{} {
+	return &s.ID
+}
+
+// HasPK returns true if record has non-zero primary key set, false otherwise.
+func (s *Constraints) HasPK() bool {
+	return s.ID != ConstraintsTable.z[ConstraintsTable.s.PKFieldIndex]
+}
+
+// SetPK sets record primary key, if possible.
+//
+// Deprecated: prefer direct field assignment where possible: s.ID = pk.
+func (s *Constraints) SetPK(pk interface{}) {
+	reform.SetPK(s, pk)
+}
+
+// check interfaces
+var (
+	_ reform.View   = ConstraintsTable
+	_ reform.Struct = (*Constraints)(nil)
+	_ reform.Table  = ConstraintsTable
+	_ reform.Record = (*Constraints)(nil)
+	_ fmt.Stringer  = (*Constraints)(nil)
+)
+
 type legacyPersonTableType struct {
 	s parse.StructInfo
 	z []interface{}
@@ -338,7 +616,10 @@ func (v *legacyPersonTableType) Name() string {
 
 // Columns returns a new slice of column names for that view or table in SQL database.
 func (v *legacyPersonTableType) Columns() []string {
-	return []string{"id", "name"}
+	return []string{
+		"id",
+		"name",
+	}
 }
 
 // NewStruct makes a new struct for that view or table.
@@ -358,7 +639,16 @@ func (v *legacyPersonTableType) PKColumnIndex() uint {
 
 // LegacyPersonTable represents people view or table in SQL database.
 var LegacyPersonTable = &legacyPersonTableType{
-	s: parse.StructInfo{Type: "LegacyPerson", SQLSchema: "legacy", SQLName: "people", Fields: []parse.FieldInfo{{Name: "ID", Type: "int32", Column: "id"}, {Name: "Name", Type: "*string", Column: "name"}}, PKFieldIndex: 0},
+	s: parse.StructInfo{
+		Type:      "LegacyPerson",
+		SQLSchema: "legacy",
+		SQLName:   "people",
+		Fields: []parse.FieldInfo{
+			{Name: "ID", Type: "int32", Column: "id"},
+			{Name: "Name", Type: "*string", Column: "name"},
+		},
+		PKFieldIndex: 0,
+	},
 	z: new(LegacyPerson).Values(),
 }
 
@@ -415,13 +705,11 @@ func (s *LegacyPerson) HasPK() bool {
 	return s.ID != LegacyPersonTable.z[LegacyPersonTable.s.PKFieldIndex]
 }
 
-// SetPK sets record primary key.
+// SetPK sets record primary key, if possible.
+//
+// Deprecated: prefer direct field assignment where possible: s.ID = pk.
 func (s *LegacyPerson) SetPK(pk interface{}) {
-	if i64, ok := pk.(int64); ok {
-		s.ID = int32(i64)
-	} else {
-		s.ID = pk.(int32)
-	}
+	reform.SetPK(s, pk)
 }
 
 // check interfaces
@@ -433,119 +721,11 @@ var (
 	_ fmt.Stringer  = (*LegacyPerson)(nil)
 )
 
-type iDOnlyTableType struct {
-	s parse.StructInfo
-	z []interface{}
-}
-
-// Schema returns a schema name in SQL database ("").
-func (v *iDOnlyTableType) Schema() string {
-	return v.s.SQLSchema
-}
-
-// Name returns a view or table name in SQL database ("id_only").
-func (v *iDOnlyTableType) Name() string {
-	return v.s.SQLName
-}
-
-// Columns returns a new slice of column names for that view or table in SQL database.
-func (v *iDOnlyTableType) Columns() []string {
-	return []string{"id"}
-}
-
-// NewStruct makes a new struct for that view or table.
-func (v *iDOnlyTableType) NewStruct() reform.Struct {
-	return new(IDOnly)
-}
-
-// NewRecord makes a new record for that table.
-func (v *iDOnlyTableType) NewRecord() reform.Record {
-	return new(IDOnly)
-}
-
-// PKColumnIndex returns an index of primary key column for that table in SQL database.
-func (v *iDOnlyTableType) PKColumnIndex() uint {
-	return uint(v.s.PKFieldIndex)
-}
-
-// IDOnlyTable represents id_only view or table in SQL database.
-var IDOnlyTable = &iDOnlyTableType{
-	s: parse.StructInfo{Type: "IDOnly", SQLSchema: "", SQLName: "id_only", Fields: []parse.FieldInfo{{Name: "ID", Type: "int32", Column: "id"}}, PKFieldIndex: 0},
-	z: new(IDOnly).Values(),
-}
-
-// String returns a string representation of this struct or record.
-func (s IDOnly) String() string {
-	res := make([]string, 1)
-	res[0] = "ID: " + reform.Inspect(s.ID, true)
-	return strings.Join(res, ", ")
-}
-
-// Values returns a slice of struct or record field values.
-// Returned interface{} values are never untyped nils.
-func (s *IDOnly) Values() []interface{} {
-	return []interface{}{
-		s.ID,
-	}
-}
-
-// Pointers returns a slice of pointers to struct or record fields.
-// Returned interface{} values are never untyped nils.
-func (s *IDOnly) Pointers() []interface{} {
-	return []interface{}{
-		&s.ID,
-	}
-}
-
-// View returns View object for that struct.
-func (s *IDOnly) View() reform.View {
-	return IDOnlyTable
-}
-
-// Table returns Table object for that record.
-func (s *IDOnly) Table() reform.Table {
-	return IDOnlyTable
-}
-
-// PKValue returns a value of primary key for that record.
-// Returned interface{} value is never untyped nil.
-func (s *IDOnly) PKValue() interface{} {
-	return s.ID
-}
-
-// PKPointer returns a pointer to primary key field for that record.
-// Returned interface{} value is never untyped nil.
-func (s *IDOnly) PKPointer() interface{} {
-	return &s.ID
-}
-
-// HasPK returns true if record has non-zero primary key set, false otherwise.
-func (s *IDOnly) HasPK() bool {
-	return s.ID != IDOnlyTable.z[IDOnlyTable.s.PKFieldIndex]
-}
-
-// SetPK sets record primary key.
-func (s *IDOnly) SetPK(pk interface{}) {
-	if i64, ok := pk.(int64); ok {
-		s.ID = int32(i64)
-	} else {
-		s.ID = pk.(int32)
-	}
-}
-
-// check interfaces
-var (
-	_ reform.View   = IDOnlyTable
-	_ reform.Struct = (*IDOnly)(nil)
-	_ reform.Table  = IDOnlyTable
-	_ reform.Record = (*IDOnly)(nil)
-	_ fmt.Stringer  = (*IDOnly)(nil)
-)
-
 func init() {
 	parse.AssertUpToDate(&PersonTable.s, new(Person))
 	parse.AssertUpToDate(&ProjectTable.s, new(Project))
 	parse.AssertUpToDate(&PersonProjectView.s, new(PersonProject))
-	parse.AssertUpToDate(&LegacyPersonTable.s, new(LegacyPerson))
 	parse.AssertUpToDate(&IDOnlyTable.s, new(IDOnly))
+	parse.AssertUpToDate(&ConstraintsTable.s, new(Constraints))
+	parse.AssertUpToDate(&LegacyPersonTable.s, new(LegacyPerson))
 }

@@ -76,4 +76,4 @@
 package reform
 
 // Version defines reform version.
-const Version = "v1.4.0"
+const Version = "v1.6.0-dev"

@@ -94,7 +94,11 @@ func (q *Querier) insert(str Struct, columns []string, values []interface{}) err
 			if err != nil {
 				return err
 			}
-			record.SetPK(id)
+
+			// TODO optimize to avoid using reflection
+			// https://github.com/go-reform/reform/issues/269
+			// record.SetPK(id)
+			SetPK(record, id)
 		}
 		return nil
 
